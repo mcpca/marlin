@@ -8,8 +8,8 @@ The implementation is based on the algorithm described in Kao, Osher and Qian,
 _Lax-Friedrichs sweeping scheme for static Hamilton-Jacobi equations_ (available
 [here](https://www.sciencedirect.com/science/article/pii/S0021999103006016)).
 
-The implementation is dimension-agnostic (the dimension is set at compile time)
-and uses the hdf5 format for data i/o.
+It is dimension-agnostic (the dimension is set at compile time) and uses the
+HDF5 format for data i/o.
 
 Dependencies
 ---
@@ -75,3 +75,9 @@ dimensions to 3 in order to run the `eikonal3d` example.
 
 You'll need to have `numpy`, `h5py` and `matplotlib` installed to run the
 examples.
+
+Acknowledgments
+---
+
+* [LSTS-FEUP](https://lsts.pt)
+* Jorge Estrela da Silva
