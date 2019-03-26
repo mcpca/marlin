@@ -28,7 +28,7 @@
 #include <array>
 
 #ifndef FSM_N_DIMS
-#define FSM_N_DIMS 3
+#define FSM_N_DIMS 2
 #endif
 
 namespace fsm
