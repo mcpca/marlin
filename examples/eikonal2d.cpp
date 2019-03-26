@@ -1,19 +1,11 @@
 #include <cmath>
 #include <iostream>
 #include <numeric>
-#include "solver.hpp"
-
-#if defined(__clang__)
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wunused-parameter"
-#    pragma clang diagnostic ignored "-Wunused-lambda-capture"
-#elif defined(__GNUC__)
-#    pragma GCC diagnostic push
-#    pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
+#include "fsm/solver.hpp"
 
 int main()
 {
+#if FSM_N_DIMS == 2
     auto h = [](auto x, auto&& p) -> double {
         // Norm of p
         return std::sqrt(
@@ -23,12 +15,16 @@ int main()
     constexpr std::array<std::pair<fsm::scalar_t, fsm::scalar_t>, fsm::dim>
         vertices = { { { -1.0, 1.0 }, { -1.0, 1.0 } } };
 
-    constexpr fsm::vector_t diss_coeffs = { { 1.0, 1.0 } };
+    constexpr fsm::vector_t viscosity = { { 1.0, 1.0 } };
+
+    fsm::solver::params_t params;
+    params.tolerance = 1.0e-4;
+    params.maxval = 2.0;
 
     fsm::solver::solver_t s(
-        "../data/eikonal2d.h5", h, vertices, diss_coeffs, 2.0, 1.0e-4);
+        "../data/eikonal2d.h5", h, vertices, viscosity, params);
 
     s.solve();
-
+#endif
     return 0;
 }

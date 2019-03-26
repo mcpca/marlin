@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <iostream>
 #include <numeric>
-#include "solver.hpp"
+#include "fsm/solver.hpp"
 
 int main(int argc, char** argv)
 {
@@ -43,12 +43,16 @@ int main(int argc, char** argv)
                p[0] * v[0] - p[1] * v[1];
     };
 
-    fsm::vector_t diss_coeffs;
-    diss_coeffs[0] = 1.0 + std::fabs(v[0]);
-    diss_coeffs[1] = 1.0 + std::fabs(v[1]);
+    fsm::vector_t viscosity;
+    viscosity[0] = 1.0 + std::fabs(v[0]);
+    viscosity[1] = 1.0 + std::fabs(v[1]);
+
+    fsm::solver::params_t params;
+    params.tolerance = 1.0e-4;
+    params.maxval = 5.0;
 
     fsm::solver::solver_t s(
-        "../data/constant_field.h5", h, vertices, diss_coeffs, 5.0, 1.0e-4);
+        "../data/constant_field.h5", h, vertices, viscosity, params);
 
     s.solve();
 #endif

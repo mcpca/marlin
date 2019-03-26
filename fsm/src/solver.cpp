@@ -29,7 +29,7 @@
 #include "data.hpp"
 #include "grid.hpp"
 #include "io.hpp"
-#include "solver.hpp"
+#include "fsm/solver.hpp"
 
 namespace fsm
 {
@@ -45,9 +45,8 @@ namespace fsm
             std::string const& filename,
             hamiltonian_t const& hamiltonian,
             std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-            vector_t const& diss_coeffs,
-            scalar_t maxval,
-            scalar_t tolerance)
+            vector_t const& viscosity,
+            params_t const& params)
         {
             auto data = io::read(filename, std::string("cost_function"));
 
@@ -63,9 +62,8 @@ namespace fsm
                             hamiltonian,
                             std::move(data.data),
                             g,
-                            diss_coeffs,
-                            maxval,
-                            tolerance);
+                            viscosity,
+                            params);
         }
 
         solver_t::solver_t(solver_t&&) noexcept = default;
@@ -76,38 +74,35 @@ namespace fsm
             std::string const& filename,
             hamiltonian_t const& hamiltonian,
             std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-            vector_t const& diss_coeffs,
-            scalar_t maxval,
-            scalar_t tolerance)
+            vector_t const& viscosity,
+            params_t const& params)
             : solver_t(make_solver(filename,
                                    hamiltonian,
                                    vertices,
-                                   diss_coeffs,
-                                   maxval,
-                                   tolerance))
+                                   viscosity,
+                                   params))
         {}
 
         solver_t::solver_t(std::string const& filename,
                            hamiltonian_t const& hamiltonian,
                            data::data_t cost,
                            grid::grid_t const& grid,
-                           vector_t const& diss_coeffs,
-                           scalar_t maxval,
-                           scalar_t tolerance)
+                           vector_t const& viscosity,
+                           params_t const& params)
             : m_filename(filename),
               m_hamiltonian(hamiltonian),
               m_grid(std::make_unique<grid::grid_t>(grid)),
-              m_soln(std::make_unique<data::data_t>(m_grid->npts(), maxval)),
+              m_soln(std::make_unique<data::data_t>(m_grid->npts(), params.maxval)),
               m_cost(std::make_unique<data::data_t>(std::move(cost))),
-              m_diss_coeffs(diss_coeffs),
+              m_viscosity(viscosity),
               m_c(scalar_t{ 1.0 } /
-                  std::inner_product(std::begin(m_diss_coeffs),
-                                     std::end(m_diss_coeffs),
+                  std::inner_product(std::begin(m_viscosity),
+                                     std::end(m_viscosity),
                                      std::begin(m_grid->h()),
                                      0.0,
                                      std::plus<scalar_t>(),
                                      std::divides<scalar_t>())),
-              m_tolerance(tolerance)
+              m_tolerance(params.tolerance)
         {}
 
         void solver_t::solve()
@@ -248,8 +243,8 @@ namespace fsm
 
             return m_c * (m_cost->at(index) -
                           m_hamiltonian(m_grid->point(index), data.p) +
-                          std::inner_product(std::begin(m_diss_coeffs),
-                                             std::end(m_diss_coeffs),
+                          std::inner_product(std::begin(m_viscosity),
+                                             std::end(m_viscosity),
                                              std::begin(data.avgs),
                                              0.0));
         }

@@ -1,7 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <numeric>
-#include "solver.hpp"
+#include "fsm/solver.hpp"
 
 int main()
 {
@@ -55,10 +55,14 @@ int main()
         return norm * speed(z, omega);
     };
 
-    constexpr fsm::vector_t diss_coeffs = { { 1.0, 1.0 } };
+    constexpr fsm::vector_t viscosity = { { 1.0, 1.0 } };
+
+    fsm::solver::params_t params;
+    params.tolerance = 1.0e-4;
+    params.maxval = 2.0;
 
     fsm::solver::solver_t s(
-        "../data/geodesic.h5", h, vertices, diss_coeffs, 10.0, 1.0e-4);
+        "../data/geodesic.h5", h, vertices, viscosity, params);
 
     s.solve();
 #endif

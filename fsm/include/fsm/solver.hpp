@@ -45,6 +45,13 @@ namespace fsm
 
     namespace solver
     {
+        //! Numerical parameters supplied by the user.
+        struct params_t
+        {
+            scalar_t maxval;
+            scalar_t tolerance;
+        };
+
         static_assert(dim > 1,
                       "Number of dimensions must be greater than zero");
 
@@ -57,9 +64,8 @@ namespace fsm
                 std::string const& filename,
                 hamiltonian_t const& hamiltonian,
                 std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-                vector_t const& diss_coeffs,
-                scalar_t maxval,
-                scalar_t tolerance);
+                vector_t const& viscosity,
+                params_t const& params);
 
             solver_t(solver_t&&) noexcept;
             solver_t& operator=(solver_t&&) noexcept;
@@ -72,17 +78,15 @@ namespace fsm
                 std::string const& filename,
                 hamiltonian_t const& hamiltonian,
                 std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-                vector_t const& diss_coeffs,
-                scalar_t maxval,
-                scalar_t tolerance);
+                vector_t const& viscosity,
+                params_t const& params);
 
             solver_t(std::string const& filename,
                      hamiltonian_t const& hamiltonian,
                      data::data_t cost,
                      grid::grid_t const& grid,
-                     vector_t const& diss_coeffs,
-                     scalar_t maxval,
-                     scalar_t tolerance);
+                     vector_t const& viscosity,
+                     params_t const& params);
 
             void initialize();
             bool iterate();
@@ -103,7 +107,7 @@ namespace fsm
             std::unique_ptr<data::data_t> m_cost;
 
             //! Numerical parameters.
-            vector_t m_diss_coeffs;
+            vector_t m_viscosity;
             scalar_t m_c;
             scalar_t m_tolerance;
         };

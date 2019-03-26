@@ -27,7 +27,7 @@
 
 #include <array>
 
-#include "defs.hpp"
+#include "fsm/defs.hpp"
 
 namespace fsm
 {

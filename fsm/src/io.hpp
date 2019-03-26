@@ -26,7 +26,7 @@
 #pragma once
 
 #include "data.hpp"
-#include "defs.hpp"
+#include "fsm/defs.hpp"
 
 namespace fsm
 {
