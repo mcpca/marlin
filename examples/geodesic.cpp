@@ -25,25 +25,23 @@ int main()
         return pt;
     };
 
-    auto grad_x = [](auto const& x) -> fsm::scalar_t {
-        return 0.9 * 2 * M_PI * std::cos(2 * M_PI * x[0]) *
-               std::sin(2 * M_PI * x[1]);
+    auto grad = [](auto const& x) {
+        return fsm::vector_t{ static_cast<fsm::scalar_t>(
+                                  0.9 * 2 * M_PI * std::cos(2 * M_PI * x[0]) *
+                                  std::sin(2 * M_PI * x[1])),
+                              static_cast<fsm::scalar_t>(
+                                  0.9 * 2 * M_PI * std::sin(2 * M_PI * x[0]) *
+                                  std::cos(2 * M_PI * x[1])) };
     };
 
-    auto grad_y = [](auto const& x) -> fsm::scalar_t {
-        return 0.9 * 2 * M_PI * std::sin(2 * M_PI * x[0]) *
-               std::cos(2 * M_PI * x[1]);
-    };
-
-    auto speed = [&grad_x, &grad_y](auto const& x,
-                                    auto omega) -> fsm::scalar_t {
-        auto gx = grad_x(x);
-        auto gy = grad_y(x);
+    auto speed = [&grad](auto const& x, auto omega) -> fsm::scalar_t {
+        auto g = grad(x);
         auto s = std::sin(omega);
         auto ss = std::sin(2 * omega);
         auto c = std::cos(omega);
-        auto num = 1 + gx * gx * s * s + gy * gy * c * c - gx * gy * ss;
-        auto den = 1 + gx * gx + gy * gy;
+        auto num =
+            1 + g[0] * g[0] * s * s + g[1] * g[1] * c * c - g[0] * g[1] * ss;
+        auto den = 1 + g[0] * g[0] + g[1] * g[1];
         return std::sqrt(num / den);
     };
 
@@ -55,7 +53,7 @@ int main()
         return norm * speed(z, omega);
     };
 
-    constexpr fsm::vector_t viscosity = { { 1.0, 1.0 } };
+    auto viscosity = [](auto x) { return fsm::vector_t{ 1.0, 1.0 }; };
 
     fsm::solver::params_t params;
     params.tolerance = 1.0e-4;

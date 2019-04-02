@@ -27,9 +27,9 @@
 #include <numeric>
 
 #include "data.hpp"
+#include "fsm/solver.hpp"
 #include "grid.hpp"
 #include "io.hpp"
-#include "fsm/solver.hpp"
 
 namespace fsm
 {
@@ -45,7 +45,7 @@ namespace fsm
             std::string const& filename,
             hamiltonian_t const& hamiltonian,
             std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-            vector_t const& viscosity,
+            std::function<vector_t(point_t const&)> const& viscosity,
             params_t const& params)
         {
             auto data = io::read(filename, std::string("cost_function"));
@@ -74,7 +74,7 @@ namespace fsm
             std::string const& filename,
             hamiltonian_t const& hamiltonian,
             std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-            vector_t const& viscosity,
+            std::function<vector_t(point_t const&)> const& viscosity,
             params_t const& params)
             : solver_t(make_solver(filename,
                                    hamiltonian,
@@ -83,25 +83,20 @@ namespace fsm
                                    params))
         {}
 
-        solver_t::solver_t(std::string const& filename,
-                           hamiltonian_t const& hamiltonian,
-                           data::data_t cost,
-                           grid::grid_t const& grid,
-                           vector_t const& viscosity,
-                           params_t const& params)
+        solver_t::solver_t(
+            std::string const& filename,
+            hamiltonian_t const& hamiltonian,
+            data::data_t cost,
+            grid::grid_t const& grid,
+            std::function<vector_t(point_t const&)> const& viscosity,
+            params_t const& params)
             : m_filename(filename),
               m_hamiltonian(hamiltonian),
               m_grid(std::make_unique<grid::grid_t>(grid)),
-              m_soln(std::make_unique<data::data_t>(m_grid->npts(), params.maxval)),
+              m_soln(std::make_unique<data::data_t>(m_grid->npts(),
+                                                    params.maxval)),
               m_cost(std::make_unique<data::data_t>(std::move(cost))),
               m_viscosity(viscosity),
-              m_c(scalar_t{ 1.0 } /
-                  std::inner_product(std::begin(m_viscosity),
-                                     std::end(m_viscosity),
-                                     std::begin(m_grid->h()),
-                                     0.0,
-                                     std::plus<>(),
-                                     std::divides<>())),
               m_tolerance(params.tolerance)
         {}
 
@@ -223,14 +218,26 @@ namespace fsm
 
         inline scalar_t solver_t::update(index_t index) const
         {
-            auto data = estimate_p(index);
+            auto point = m_grid->point(index);
+            auto data = estimate_p(point);
+            auto viscosity = m_viscosity(point);
 
-            return m_c * (m_cost->at(index) -
-                          m_hamiltonian(m_grid->point(index), data.p) +
-                          std::inner_product(std::begin(m_viscosity),
-                                             std::end(m_viscosity),
-                                             std::begin(data.avgs),
-                                             0.0));
+            return scale(viscosity) *
+                   (m_cost->at(index) - m_hamiltonian(point, data.p) +
+                    std::inner_product(std::begin(viscosity),
+                                       std::end(viscosity),
+                                       std::begin(data.avgs),
+                                       0.0));
+        }
+
+        inline scalar_t solver_t::scale(vector_t const& viscosity) const
+        {
+            return scalar_t{ 1.0 } / std::inner_product(std::begin(viscosity),
+                                                        std::end(viscosity),
+                                                        std::begin(m_grid->h()),
+                                                        0.0,
+                                                        std::plus<>(),
+                                                        std::divides<>());
         }
 
         inline scalar_t solver_t::update_boundary(index_t index,
@@ -251,15 +258,13 @@ namespace fsm
         }
 
         inline typename solver_t::update_data_internal_t solver_t::estimate_p(
-            index_t index) const
+            point_t point) const
         {
             // Centered finite-difference estimate of the gradient.
             vector_t p;
             // Scaled averages of the neighboring values along each dimension
             // for the dissipation terms.
             vector_t avgs;
-
-            auto point = m_grid->point(index);
 
             for(index_t i = 0; i < dim; ++i)
             {

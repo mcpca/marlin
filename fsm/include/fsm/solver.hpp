@@ -64,7 +64,7 @@ namespace fsm
                 std::string const& filename,
                 hamiltonian_t const& hamiltonian,
                 std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-                vector_t const& viscosity,
+                std::function<vector_t(point_t const&)> const& viscosity,
                 params_t const& params);
 
             solver_t(solver_t&&) noexcept;
@@ -78,14 +78,14 @@ namespace fsm
                 std::string const& filename,
                 hamiltonian_t const& hamiltonian,
                 std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-                vector_t const& viscosity,
+                std::function<vector_t(point_t const&)> const& viscosity,
                 params_t const& params);
 
             solver_t(std::string const& filename,
                      hamiltonian_t const& hamiltonian,
                      data::data_t cost,
                      grid::grid_t const& grid,
-                     vector_t const& viscosity,
+                     std::function<vector_t(point_t const&)> const& viscosity,
                      params_t const& params);
 
             void initialize();
@@ -97,8 +97,10 @@ namespace fsm
             scalar_t update(index_t index) const;
             scalar_t update_boundary(index_t index, index_t boundary) const;
 
+            scalar_t scale(vector_t const& viscosity) const;
+
             struct update_data_internal_t;
-            update_data_internal_t estimate_p(index_t index) const;
+            update_data_internal_t estimate_p(point_t point) const;
 
             std::string m_filename;
             hamiltonian_t m_hamiltonian;
@@ -107,8 +109,7 @@ namespace fsm
             std::unique_ptr<data::data_t> m_cost;
 
             //! Numerical parameters.
-            vector_t m_viscosity;
-            scalar_t m_c;
+            std::function<vector_t(point_t const&)> m_viscosity;
             scalar_t m_tolerance;
         };
     }    // namespace solver

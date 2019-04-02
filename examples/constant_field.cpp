@@ -12,21 +12,6 @@ int main(int argc, char** argv)
         { { -1.0, 1.0 }, { -1.0, 1.0 } }
     };
 
-    std::array<int, fsm::dim> npts = { { 201, 201 } };
-
-    auto pt = [&vertices, &npts](auto x) -> auto
-    {
-        std::array<fsm::scalar_t, fsm::dim> pt;
-        for(auto i = 0ul; i < fsm::dim; ++i)
-        {
-            pt[i] =
-                vertices[i].first +
-                x[i] * (vertices[i].second - vertices[i].first) / (npts[i] - 1);
-        }
-
-        return pt;
-    };
-
     fsm::scalar_t v[] = { -0.5, 0.5 };
 
     if(argc >= 3)
@@ -35,17 +20,17 @@ int main(int argc, char** argv)
         sscanf(argv[2], "%f", v + 1);
     }
 
-    std::cout << "v = {" << v[0] << ", " << v[1] << "}" << std::endl;
-
     auto h = [&v](auto x, auto&& p) -> double {
         return std::sqrt(std::inner_product(
                    std::begin(p), std::end(p), std::begin(p), 0.0)) -
                p[0] * v[0] - p[1] * v[1];
     };
 
-    fsm::vector_t viscosity;
-    viscosity[0] = 1.0 + std::fabs(v[0]);
-    viscosity[1] = 1.0 + std::fabs(v[1]);
+    auto viscosity = [&v](auto const& x) {
+        return fsm::vector_t{ static_cast<fsm::scalar_t>(1.0 + std::fabs(v[0])),
+                              static_cast<fsm::scalar_t>(1.0 +
+                                                         std::fabs(v[1])) };
+    };
 
     fsm::solver::params_t params;
     params.tolerance = 1.0e-4;

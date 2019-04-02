@@ -15,7 +15,7 @@ int main()
     constexpr std::array<std::pair<fsm::scalar_t, fsm::scalar_t>, fsm::dim>
         vertices = { { { -1.0, 1.0 }, { -1.0, 1.0 }, { -1.0, 1.0 } } };
 
-    constexpr fsm::vector_t viscosity = { { 1.0, 1.0, 1.0 } };
+    auto viscosity = [](auto x){ return fsm::vector_t{1.0, 1.0, 1.0}; };
 
     fsm::solver::params_t params;
     params.tolerance = 1.0e-4;
