@@ -68,22 +68,13 @@ namespace fsm
 
             std::cout << msg << '\n';
 
-            auto* raw_data = new scalar_t[dataspace.size()];
+            auto raw_data = std::make_unique<scalar_t[]>(dataspace.size());
 
-            try
-            {
-                hdf5::ArrayAdapter<scalar_t> adapter(raw_data,
-                                                     dataspace.size());
-                dataset.read(adapter);
-            }
-            catch(...)
-            {
-                delete[] raw_data;
-                throw;
-            }
+            hdf5::ArrayAdapter<scalar_t> adapter(raw_data.get(),
+                                                 dataspace.size());
+            dataset.read(adapter);
 
-            auto data = data::data_t(dataspace.size(),
-                                     std::unique_ptr<scalar_t[]>(raw_data));
+            auto data = data::data_t(dataspace.size(), std::move(raw_data));
 
             std::cout << "Successfully read dataset \'" + dsetname + "\'."
                       << '\n';

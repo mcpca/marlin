@@ -50,7 +50,7 @@ namespace fsm
             //! Creates a new unique_ptr and fills it with a given value.
             //! @param[in] memsize size of the array
             //! @param[in] fill value to fill the array with
-            data_t(index_t memsize, scalar_t fill = scalar_t{ 0 });
+            explicit data_t(index_t memsize, scalar_t fill = scalar_t{ 0 });
 
             // Disable copying
             data_t(data_t const&) = delete;

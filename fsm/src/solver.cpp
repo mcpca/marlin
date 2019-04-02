@@ -100,8 +100,8 @@ namespace fsm
                                      std::end(m_viscosity),
                                      std::begin(m_grid->h()),
                                      0.0,
-                                     std::plus<scalar_t>(),
-                                     std::divides<scalar_t>())),
+                                     std::plus<>(),
+                                     std::divides<>())),
               m_tolerance(params.tolerance)
         {}
 
@@ -181,22 +181,6 @@ namespace fsm
             }
 
             return false;
-        }
-
-        // Helper function - print a container.
-        template<typename T>
-        std::string ts(T&& container)
-        {
-            std::string out = "";
-            for(auto&& e : container)
-            {
-                out += std::to_string(e);
-                out += ", ";
-            }
-
-            out.erase(out.size() - 2);
-
-            return out;
         }
 
         scalar_t solver_t::sweep(index_t dir)

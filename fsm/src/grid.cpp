@@ -41,8 +41,8 @@ namespace fsm
             : m_size(size),
               m_npts(std::accumulate(std::begin(m_size),
                                      std::end(m_size),
-                                     1.0,
-                                     std::multiplies<index_t>())),
+                                     1,
+                                     std::multiplies<>())),
               m_h([&] {
                   vector_t h;
 
@@ -131,7 +131,7 @@ namespace fsm
             assert(dir < n_sweeps);
             assert(dimension < dim);
 
-            return dir & (1 << dimension);
+            return static_cast<bool>(dir & (1 << dimension));
         }
 
         index_t grid_t::next(index_t idx, index_t dir) const
@@ -154,7 +154,7 @@ namespace fsm
             {
                 point_t p = point(idx);
 
-                p[0] += dir & 0x01 ? -1 : +1;
+                p[0] += static_cast<bool>(dir & 0x01) ? -1 : +1;
 
                 for(index_t i = 0; i < dim - 1; ++i)
                 {
