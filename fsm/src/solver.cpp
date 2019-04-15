@@ -45,7 +45,7 @@ namespace fsm
             std::string const& filename,
             hamiltonian_t const& hamiltonian,
             std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-            std::function<vector_t(point_t const&)> const& viscosity,
+            std::function<vector_t(input_t const&)> const& viscosity,
             params_t const& params)
         {
             auto data = io::read(filename, std::string("cost_function"));
@@ -74,7 +74,7 @@ namespace fsm
             std::string const& filename,
             hamiltonian_t const& hamiltonian,
             std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-            std::function<vector_t(point_t const&)> const& viscosity,
+            std::function<vector_t(input_t const&)> const& viscosity,
             params_t const& params)
             : solver_t(make_solver(filename,
                                    hamiltonian,
@@ -88,7 +88,7 @@ namespace fsm
             hamiltonian_t const& hamiltonian,
             data::data_t cost,
             grid::grid_t const& grid,
-            std::function<vector_t(point_t const&)> const& viscosity,
+            std::function<vector_t(input_t const&)> const& viscosity,
             params_t const& params)
             : m_filename(filename),
               m_hamiltonian(hamiltonian),
@@ -220,14 +220,24 @@ namespace fsm
         {
             auto point = m_grid->point(index);
             auto data = estimate_p(point);
-            auto viscosity = m_viscosity(point);
+#ifdef FSM_USE_ROWMAJOR
+            auto viscosity = m_viscosity(index);
 
+            return scale(viscosity) *
+                   (m_cost->at(index) - m_hamiltonian(index, data.p) +
+                    std::inner_product(std::begin(viscosity),
+                                       std::end(viscosity),
+                                       std::begin(data.avgs),
+                                       0.0));
+#else
+            auto viscosity = m_viscosity(point);
             return scale(viscosity) *
                    (m_cost->at(index) - m_hamiltonian(point, data.p) +
                     std::inner_product(std::begin(viscosity),
                                        std::end(viscosity),
                                        std::begin(data.avgs),
                                        0.0));
+#endif
         }
 
         inline scalar_t solver_t::scale(vector_t const& viscosity) const

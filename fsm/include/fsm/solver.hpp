@@ -55,7 +55,7 @@ namespace fsm
         static_assert(dim > 1,
                       "Number of dimensions must be greater than zero");
 
-        using hamiltonian_t = std::function<double(point_t, vector_t)>;
+        using hamiltonian_t = std::function<double(input_t, vector_t)>;
 
         class solver_t
         {
@@ -64,7 +64,7 @@ namespace fsm
                 std::string const& filename,
                 hamiltonian_t const& hamiltonian,
                 std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-                std::function<vector_t(point_t const&)> const& viscosity,
+                std::function<vector_t(input_t const&)> const& viscosity,
                 params_t const& params);
 
             solver_t(solver_t&&) noexcept;
@@ -78,14 +78,14 @@ namespace fsm
                 std::string const& filename,
                 hamiltonian_t const& hamiltonian,
                 std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-                std::function<vector_t(point_t const&)> const& viscosity,
+                std::function<vector_t(input_t const&)> const& viscosity,
                 params_t const& params);
 
             solver_t(std::string const& filename,
                      hamiltonian_t const& hamiltonian,
                      data::data_t cost,
                      grid::grid_t const& grid,
-                     std::function<vector_t(point_t const&)> const& viscosity,
+                     std::function<vector_t(input_t const&)> const& viscosity,
                      params_t const& params);
 
             void initialize();
@@ -109,7 +109,7 @@ namespace fsm
             std::unique_ptr<data::data_t> m_cost;
 
             //! Numerical parameters.
-            std::function<vector_t(point_t const&)> m_viscosity;
+            std::function<vector_t(input_t const&)> m_viscosity;
             scalar_t m_tolerance;
         };
     }    // namespace solver

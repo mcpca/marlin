@@ -42,4 +42,11 @@ namespace fsm
 
     using scalar_t = float;
     using vector_t = std::array<scalar_t, dim>;
+
+#ifdef FSM_USE_ROWMAJOR
+    using input_t = index_t;
+#else
+    using input_t = point_t;
+#endif
+
 }    // namespace fsm
