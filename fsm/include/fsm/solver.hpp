@@ -27,10 +27,14 @@
 
 #include <array>
 #include <functional>
+#include <future>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "defs.hpp"
+
+#include "ThreadPool/ThreadPool.h"
 
 namespace fsm
 {
@@ -54,8 +58,6 @@ namespace fsm
 
         static_assert(dim > 1,
                       "Number of dimensions must be greater than zero");
-
-        using hamiltonian_t = std::function<double(input_t, vector_t)>;
 
         class solver_t
         {
@@ -91,26 +93,19 @@ namespace fsm
             void initialize();
             bool iterate();
 
-            scalar_t sweep(index_t dir);
-            scalar_t enforce_boundary(index_t boundary);
-
-            scalar_t update(index_t index) const;
-            scalar_t update_boundary(index_t index, index_t boundary) const;
-
-            scalar_t scale(vector_t const& viscosity) const;
-
-            struct update_data_internal_t;
-            update_data_internal_t estimate_p(point_t point) const;
+            scalar_t merge();
 
             std::string m_filename;
             hamiltonian_t m_hamiltonian;
             std::unique_ptr<grid::grid_t> m_grid;
-            std::unique_ptr<data::data_t> m_soln;
+            std::vector<std::unique_ptr<data::data_t>> m_soln;
             std::unique_ptr<data::data_t> m_cost;
 
             //! Numerical parameters.
             std::function<vector_t(input_t const&)> m_viscosity;
             scalar_t m_tolerance;
+
+            std::unique_ptr<ThreadPool> m_pool = nullptr;
         };
     }    // namespace solver
 }    // namespace fsm

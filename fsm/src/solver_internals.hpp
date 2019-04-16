@@ -25,57 +25,36 @@
 
 #pragma once
 
-#include <array>
-#include <functional>
+#include "fsm/defs.hpp"
 
-#define FSM_IS_PARALLEL
-
-#ifndef FSM_IS_PARALLEL
-#    define FSM_N_WORKERS 1
-#endif
-
-#ifndef FSM_N_WORKERS
-#    include <thread>
-#endif
-
-#ifndef FSM_N_DIMS
-#    define FSM_N_DIMS 2
-#endif
+namespace grid
+{
+    struct grid_t;
+}
+namespace data
+{
+    class data_t;
+}
 
 namespace fsm
 {
-    constexpr auto dim = FSM_N_DIMS;
-
-    static_assert(dim > 1, "The number of dimensions must be at least two.");
-
-    constexpr auto n_sweeps = 1 << dim;
-    constexpr auto n_boundaries = 2 * dim;
-
-    using index_t = size_t;
-    using point_t = std::array<index_t, dim>;
-
-    using scalar_t = float;
-    using vector_t = std::array<scalar_t, dim>;
-
-#ifdef FSM_USE_ROWMAJOR
-    using input_t = index_t;
-#else
-    using input_t = point_t;
-#endif
-
-    using hamiltonian_t = std::function<double(input_t, vector_t)>;
-
-    namespace parallel
+    namespace solver
     {
-#ifdef FSM_N_WORKERS
-        constexpr auto n_workers = FSM_N_WORKERS;
+        namespace detail
+        {
+            void sweep(
+                index_t dir,
+                data::data_t* soln,
+                data::data_t const* cost,
+                grid::grid_t const* grid,
+                hamiltonian_t const& hamiltonian,
+                std::function<vector_t(input_t const&)> const& viscosity);
 
-        static_assert(n_workers > 0,
-                      "The number of threads must be greater than zero.");
-#else
-        const auto n_workers = std::thread::hardware_concurrency() >= n_sweeps
-                                   ? n_sweeps
-                                   : std::thread::hardware_concurrency();
-#endif
-    }    // namespace parallel
+            void enforce_boundary(index_t boundary,
+                                  data::data_t* soln,
+                                  data::data_t const* cost,
+                                  grid::grid_t const* grid);
+
+        }    // namespace detail
+    }        // namespace solver
 }    // namespace fsm

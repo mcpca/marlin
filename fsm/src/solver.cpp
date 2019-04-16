@@ -23,6 +23,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // https://github.com/mcpca/fsm
 
+#include <algorithm>
 #include <iostream>
 #include <numeric>
 
@@ -30,17 +31,12 @@
 #include "fsm/solver.hpp"
 #include "grid.hpp"
 #include "io.hpp"
+#include "solver_internals.hpp"
 
 namespace fsm
 {
     namespace solver
     {
-        struct solver_t::update_data_internal_t
-        {
-            vector_t p;
-            vector_t avgs;
-        };
-
         solver_t make_solver(
             std::string const& filename,
             hamiltonian_t const& hamiltonian,
@@ -93,18 +89,27 @@ namespace fsm
             : m_filename(filename),
               m_hamiltonian(hamiltonian),
               m_grid(std::make_unique<grid::grid_t>(grid)),
-              m_soln(std::make_unique<data::data_t>(m_grid->npts(),
-                                                    params.maxval)),
+              m_soln(),
               m_cost(std::make_unique<data::data_t>(std::move(cost))),
               m_viscosity(viscosity),
-              m_tolerance(params.tolerance)
-        {}
+              m_tolerance(params.tolerance),
+              m_pool(std::make_unique<ThreadPool>(parallel::n_workers))
+        {
+            m_soln.reserve(parallel::n_workers + 1);
+
+            for(unsigned i = 0; i < parallel::n_workers + 1; ++i)
+            {
+                m_soln.emplace_back(std::make_unique<data::data_t>(
+                    m_grid->npts(), params.maxval));
+            }
+        }
 
         void solver_t::solve()
         {
             std::cout << "Initializing problem instance..." << std::endl;
             initialize();
-            std::cout << "Initialized. Solving..." << std::endl;
+            std::cout << "Initialized. Solving (" << parallel::n_workers
+                      << " threads)..." << std::endl;
 
 #ifndef NDEBUG
             auto niter = 0;
@@ -122,7 +127,8 @@ namespace fsm
 
             std::cout << "Done. Writing to " << m_filename << "..."
                       << std::endl;
-            io::write(m_filename, "value_function", *m_soln, m_grid->size());
+            io::write(
+                m_filename, "value_function", *(m_soln[0]), m_grid->size());
         }
 
         void solver_t::initialize()
@@ -137,7 +143,10 @@ namespace fsm
 #ifndef NDEBUG
                     ++ntargetpts;
 #endif
-                    m_soln->at(i) = -(m_cost->at(i) + scalar_t{ 1.0 });
+                    for(unsigned j = 0; j < m_soln.size(); ++j)
+                    {
+                        m_soln[j]->at(i) = -(m_cost->at(i) + scalar_t{ 1.0 });
+                    }
                 }
             }
 #ifndef NDEBUG
@@ -146,149 +155,93 @@ namespace fsm
 #endif
         }
 
+        void sync(std::vector<std::future<void>>& results)
+        {
+            for_each(std::begin(results), std::end(results), [](auto& a) {
+                a.get();
+            });
+        }
+
         bool solver_t::iterate()
         {
-            for(index_t dir = 0; dir < n_sweeps; ++dir)
+            auto n_sweeps_done = 0;
+
+            while(n_sweeps_done < n_sweeps)
             {
-                auto diff = sweep(dir);
+                auto n_workers_launched =
+                    std::min(static_cast<unsigned>(parallel::n_workers),
+                             static_cast<unsigned>(n_sweeps - n_sweeps_done));
 
-#ifndef NDEBUG
-                std::cerr << "Sweep " << dir << ": "
-                          << "delta = " << diff << '\n';
-#endif
+                std::vector<std::future<void>> results;
+                results.reserve(n_workers_launched);
 
-                for(index_t boundary = 0; boundary < n_boundaries; ++boundary)
+                for(unsigned worker = 0; worker < n_workers_launched; ++worker)
                 {
-                    diff = std::max(diff, enforce_boundary(boundary));
+                    results.emplace_back(
+                        m_pool->enqueue(detail::sweep,
+                                        n_sweeps_done++,
+                                        m_soln[1 + worker].get(),
+                                        m_cost.get(),
+                                        m_grid.get(),
+                                        m_hamiltonian,
+                                        m_viscosity));
                 }
 
-#ifndef NDEBUG
-                std::cerr << "Sweep " << dir << " (after boundary): "
-                          << "delta = " << diff << '\n';
-#endif
-
-                // If the difference from the last iteration is less than the
-                // specified tolerance value, stop.
-                if(diff < m_tolerance)
-                {
-                    return true;
-                }
+                sync(results);
             }
 
-            return false;
+            auto n_boundaries_done = 0;
+
+            while(n_boundaries_done < n_boundaries)
+            {
+                auto n_workers_launched = std::min(
+                    static_cast<unsigned>(parallel::n_workers),
+                    static_cast<unsigned>(n_boundaries - n_boundaries_done));
+
+                std::vector<std::future<void>> results;
+                results.reserve(n_workers_launched);
+
+                for(unsigned worker = 0; worker < n_workers_launched; ++worker)
+                {
+                    results.emplace_back(
+                        m_pool->enqueue(detail::enforce_boundary,
+                                        n_boundaries_done++,
+                                        m_soln[1 + worker].get(),
+                                        m_cost.get(),
+                                        m_grid.get()));
+                }
+
+                sync(results);
+            }
+
+            return merge() < m_tolerance;
         }
 
-        scalar_t solver_t::sweep(index_t dir)
+        scalar_t solver_t::merge()
         {
-            auto diff = scalar_t{ 0.0 };
-            for(auto i = m_grid->next(m_grid->npts(), dir); i != m_grid->npts();
-                i = m_grid->next(i, dir))
-            {
-                if(m_cost->at(i) > scalar_t{ 0.0 })
-                {
-                    scalar_t old = m_soln->at(i);
-                    m_soln->at(i) = std::min(old, update(i));
+            auto diff = scalar_t{ 0 };
 
-                    diff = std::max(diff, old - m_soln->at(i));
+            for(index_t i = 0; i < m_grid->npts(); ++i)
+            {
+                auto old = m_soln[0]->at(i);
+                m_soln[0]->at(i) =
+                    std::min_element(std::begin(m_soln),
+                                     std::end(m_soln),
+                                     [&](auto const& a, auto const& b) {
+                                         return a->at(i) < b->at(i);
+                                     })
+                        ->get()
+                        ->at(i);
+
+                for(unsigned i = 1; i < m_soln.size(); ++i)
+                {
+                    m_soln[i]->at(i) = m_soln[0]->at(i);
                 }
+
+                diff = std::max(diff, old - m_soln[0]->at(i));
             }
 
             return diff;
-        }
-
-        scalar_t solver_t::enforce_boundary(index_t boundary)
-        {
-            auto diff = scalar_t{ 0.0 };
-
-            for(auto i = m_grid->next_in_boundary(m_grid->npts(), boundary);
-                i != m_grid->npts();
-                i = m_grid->next_in_boundary(i, boundary))
-            {
-                if(m_cost->at(i) > scalar_t{ 0.0 })
-                {
-                    auto old = m_soln->at(i);
-                    auto res = update_boundary(i, boundary);
-                    m_soln->at(i) = std::min(old, res);
-                    diff = std::max(diff, old - m_soln->at(i));
-                }
-            }
-
-            return diff;
-        }
-
-        inline scalar_t solver_t::update(index_t index) const
-        {
-            auto point = m_grid->point(index);
-            auto data = estimate_p(point);
-#ifdef FSM_USE_ROWMAJOR
-            auto viscosity = m_viscosity(index);
-
-            return scale(viscosity) *
-                   (m_cost->at(index) - m_hamiltonian(index, data.p) +
-                    std::inner_product(std::begin(viscosity),
-                                       std::end(viscosity),
-                                       std::begin(data.avgs),
-                                       0.0));
-#else
-            auto viscosity = m_viscosity(point);
-            return scale(viscosity) *
-                   (m_cost->at(index) - m_hamiltonian(point, data.p) +
-                    std::inner_product(std::begin(viscosity),
-                                       std::end(viscosity),
-                                       std::begin(data.avgs),
-                                       0.0));
-#endif
-        }
-
-        inline scalar_t solver_t::scale(vector_t const& viscosity) const
-        {
-            return scalar_t{ 1.0 } / std::inner_product(std::begin(viscosity),
-                                                        std::end(viscosity),
-                                                        std::begin(m_grid->h()),
-                                                        0.0,
-                                                        std::plus<>(),
-                                                        std::divides<>());
-        }
-
-        inline scalar_t solver_t::update_boundary(index_t index,
-                                                  index_t boundary) const
-        {
-            auto neighbor = m_grid->point(index);
-            auto boundary_dim = boundary >= dim ? boundary - dim : boundary;
-
-            // Approximate based on the two points in a line perpendicular to
-            // the boundary closest to the current point.
-            neighbor[boundary_dim] += boundary >= dim ? -1 : +1;
-            auto outer = m_soln->at(m_grid->index(neighbor));
-            neighbor[boundary_dim] += boundary >= dim ? -1 : +1;
-            auto inner = m_soln->at(m_grid->index(neighbor));
-
-            return std::min(std::max(2 * outer - inner, inner),
-                            m_soln->at(index));
-        }
-
-        inline typename solver_t::update_data_internal_t solver_t::estimate_p(
-            point_t point) const
-        {
-            // Centered finite-difference estimate of the gradient.
-            vector_t p;
-            // Scaled averages of the neighboring values along each dimension
-            // for the dissipation terms.
-            vector_t avgs;
-
-            for(index_t i = 0; i < dim; ++i)
-            {
-                auto neighbor = point;
-                neighbor[i] += 1;
-                auto right = m_soln->at(m_grid->index(neighbor));
-                neighbor[i] -= 2;
-                auto left = m_soln->at(m_grid->index(neighbor));
-
-                p[i] = (right - left) / (scalar_t{ 2.0 } * m_grid->h(i));
-                avgs[i] = (right + left) / (scalar_t{ 2.0 } * m_grid->h(i));
-            }
-
-            return { p, avgs };
         }
     }    // namespace solver
 }    // namespace fsm
