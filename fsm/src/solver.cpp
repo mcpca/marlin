@@ -224,6 +224,7 @@ namespace fsm
             for(index_t i = 0; i < m_grid->npts(); ++i)
             {
                 auto old = m_soln[0]->at(i);
+
                 m_soln[0]->at(i) =
                     std::min_element(std::begin(m_soln),
                                      std::end(m_soln),
@@ -233,9 +234,9 @@ namespace fsm
                         ->get()
                         ->at(i);
 
-                for(unsigned i = 1; i < m_soln.size(); ++i)
+                for(unsigned j = 1; j < m_soln.size(); ++j)
                 {
-                    m_soln[i]->at(i) = m_soln[0]->at(i);
+                    m_soln[j]->at(i) = m_soln[0]->at(i);
                 }
 
                 diff = std::max(diff, old - m_soln[0]->at(i));
