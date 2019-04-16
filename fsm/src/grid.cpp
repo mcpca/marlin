@@ -27,8 +27,6 @@
 #include <cassert>
 #include <numeric>
 
-#include <iostream>
-
 #include "grid.hpp"
 
 namespace fsm
