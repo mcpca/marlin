@@ -1,3 +1,5 @@
+add_subdirectory(external)
+
 add_library(fsm
             src/solver.cpp
             src/grid.cpp
@@ -14,4 +16,5 @@ target_include_directories(fsm
                            PUBLIC include
                            PRIVATE src)
 target_link_libraries(fsm
-                      PRIVATE h5cpp)
+                      PRIVATE h5cpp
+                      PUBLIC thread_pool)
