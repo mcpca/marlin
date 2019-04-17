@@ -71,13 +71,21 @@ namespace fsm
             //! No bounds checking is performed.
             //! @param[in] index index of the value to be read in the array
             //! @return the value held by the array at the given index
-            scalar_t at(index_t index) const;
+            scalar_t at(index_t index) const
+            {
+                assert(index < m_memsize);
+                return m_values[index];
+            }
 
             //! Get reference to value at a gridpoint.
             //! No bounds checking is performed.
             //! @param[in] index index of the value to be read in the array
             //! @return reference to the corresponding position of the array
-            scalar_t& at(index_t index);
+            scalar_t& at(index_t index)
+            {
+                assert(index < m_memsize);
+                return m_values[index];
+            }
 
             //! Get pointer to the first position of the array (read only)
             //! @return pointer to the first position of the array

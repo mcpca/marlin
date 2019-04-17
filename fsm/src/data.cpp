@@ -40,18 +40,6 @@ namespace fsm
             std::fill_n(this->begin(), m_memsize, fill);
         }
 
-        scalar_t data_t::at(index_t index) const
-        {
-            assert(index < m_memsize);
-            return m_values[index];
-        }
-
-        scalar_t& data_t::at(index_t index)
-        {
-            assert(index < m_memsize);
-            return m_values[index];
-        }
-
         scalar_t* data_t::get_values() const { return m_values.get(); }
 
         index_t data_t::size() const { return m_memsize; }
