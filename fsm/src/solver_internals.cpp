@@ -50,11 +50,7 @@ namespace fsm
                 assert(soln != nullptr);
                 assert(grid != nullptr);
 
-                // Centered finite-difference estimate of the gradient.
-                vector_t p;
-                // Scaled averages of the neighboring values along each
-                // dimension for the dissipation terms.
-                vector_t avgs;
+                update_data_internal_t res;
 
                 for(index_t i = 0; i < dim; ++i)
                 {
@@ -64,11 +60,12 @@ namespace fsm
                     neighbor[i] -= 2;
                     auto left = soln->at(grid->index(neighbor));
 
-                    p[i] = (right - left) / (scalar_t{ 2.0 } * grid->h(i));
-                    avgs[i] = (right + left) / (scalar_t{ 2.0 } * grid->h(i));
+                    res.p[i] = (right - left) / (scalar_t{ 2.0 } * grid->h(i));
+                    res.avgs[i] =
+                        (right + left) / (scalar_t{ 2.0 } * grid->h(i));
                 }
 
-                return { p, avgs };
+                return res;
             }
 
             inline scalar_t update(scalar_t ham_value,
