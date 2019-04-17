@@ -105,21 +105,14 @@ namespace fsm
                 return true;
             }());
 
-            auto offset = 0ul;
+            index_t offset = 0;
 
-            if(dim == 1)
+            for(auto i = 0; i < dim - 1; ++i)
             {
-                offset = point[0];
+                offset = m_size[i + 1] * (point[i] + offset);
             }
-            else
-            {
-                for(auto i = 0ul; i < dim - 1; ++i)
-                {
-                    offset = m_size[i + 1] * (point[i] + offset);
-                }
 
-                offset += point[dim - 1];
-            }
+            offset += point[dim - 1];
 
             return offset;
         }
