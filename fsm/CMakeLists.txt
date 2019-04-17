@@ -18,4 +18,7 @@ target_compile_options(fsm
                                -pedantic)
 
 target_include_directories(fsm PUBLIC include PRIVATE src)
-target_link_libraries(fsm PRIVATE h5cpp PUBLIC thread_pool)
+target_link_libraries(fsm
+                      PRIVATE h5cpp
+                      PUBLIC thread_pool
+                             concurrent_queue)
