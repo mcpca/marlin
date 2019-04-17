@@ -170,12 +170,15 @@ namespace fsm
             {
                 auto n_workers_launched =
                     std::min(static_cast<unsigned>(parallel::n_workers),
-                             static_cast<unsigned>(n_sweeps - n_sweeps_done));
+                             static_cast<unsigned>(n_sweeps - n_sweeps_done)) -
+                    1;
 
                 std::vector<std::future<void>> results;
                 results.reserve(n_workers_launched);
 
-                for(unsigned worker = 0; worker < n_workers_launched; ++worker)
+                unsigned worker = 0;
+
+                for(; worker < n_workers_launched; ++worker)
                 {
                     results.emplace_back(
                         m_pool->enqueue(detail::sweep,
@@ -187,6 +190,13 @@ namespace fsm
                                         m_viscosity));
                 }
 
+                detail::sweep(n_sweeps_done++,
+                              m_soln[1 + worker].get(),
+                              m_cost.get(),
+                              m_grid.get(),
+                              m_hamiltonian,
+                              m_viscosity);
+
                 sync(results);
             }
 
@@ -194,14 +204,18 @@ namespace fsm
 
             while(n_boundaries_done < n_boundaries)
             {
-                auto n_workers_launched = std::min(
-                    static_cast<unsigned>(parallel::n_workers),
-                    static_cast<unsigned>(n_boundaries - n_boundaries_done));
+                auto n_workers_launched =
+                    std::min(static_cast<unsigned>(parallel::n_workers),
+                             static_cast<unsigned>(n_boundaries -
+                                                   n_boundaries_done)) -
+                    1;
 
                 std::vector<std::future<void>> results;
                 results.reserve(n_workers_launched);
 
-                for(unsigned worker = 0; worker < n_workers_launched; ++worker)
+                unsigned worker = 0;
+
+                for(; worker < n_workers_launched; ++worker)
                 {
                     results.emplace_back(
                         m_pool->enqueue(detail::enforce_boundary,
@@ -211,6 +225,10 @@ namespace fsm
                                         m_grid.get()));
                 }
 
+                detail::enforce_boundary(n_boundaries_done++,
+                                         m_soln[1 + worker].get(),
+                                         m_cost.get(),
+                                         m_grid.get());
                 sync(results);
             }
 
