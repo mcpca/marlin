@@ -31,6 +31,7 @@
 #include "fsm/solver.hpp"
 #include "grid.hpp"
 #include "io.hpp"
+#include "queue.hpp"
 #include "solver_internals.hpp"
 
 namespace fsm
@@ -94,7 +95,8 @@ namespace fsm
               m_cost(std::make_unique<data::data_t>(std::move(cost))),
               m_viscosity(viscosity),
               m_tolerance(params.tolerance),
-              m_pool(std::make_unique<ThreadPool>(parallel::n_workers))
+              m_pool(std::make_unique<ThreadPool>(parallel::n_workers - 1)),
+              m_queue(std::make_unique<queue::queue_t>())
         {
             m_worker.reserve(parallel::n_workers);
 
@@ -102,6 +104,8 @@ namespace fsm
             {
                 m_worker.emplace_back(std::make_unique<data::data_t>(
                     m_grid->npts(), params.maxval));
+
+                m_queue->enqueue(m_worker.back().get());
             }
         }
 
@@ -166,73 +170,43 @@ namespace fsm
 
         bool solver_t::iterate()
         {
-            auto n_sweeps_done = 0;
+            std::vector<std::future<void>> results;
+            results.reserve(n_sweeps + parallel::n_workers - 2);
 
-            while(n_sweeps_done < n_sweeps)
+            // Schedule a sweep in each worker.
+            // The last sweep is done by the main thread.
+            for(auto dir = 0; dir < n_sweeps - 1; ++dir)
             {
-                auto n_workers_launched =
-                    std::min(static_cast<unsigned>(parallel::n_workers),
-                             static_cast<unsigned>(n_sweeps - n_sweeps_done)) -
-                    1;
-
-                std::vector<std::future<void>> results;
-                results.reserve(n_workers_launched);
-
-                unsigned worker = 0;
-
-                for(; worker < n_workers_launched; ++worker)
-                {
-                    results.emplace_back(
-                        m_pool->enqueue(detail::sweep,
-                                        n_sweeps_done++,
-                                        m_worker[worker].get(),
-                                        m_cost.get(),
-                                        m_grid.get(),
-                                        m_hamiltonian,
-                                        m_viscosity));
-                }
-
-                detail::sweep(n_sweeps_done++,
-                              m_worker[worker].get(),
-                              m_cost.get(),
-                              m_grid.get(),
-                              m_hamiltonian,
-                              m_viscosity);
-
-                sync(results);
+                results.emplace_back(m_pool->enqueue(detail::sweep,
+                                                     dir,
+                                                     m_queue.get(),
+                                                     m_cost.get(),
+                                                     m_grid.get(),
+                                                     m_hamiltonian,
+                                                     m_viscosity));
             }
 
-            auto n_boundaries_done = 0;
-
-            while(n_boundaries_done < n_boundaries)
+            // Each worker enforces boundary conditions on one of the data
+            // arrays.
+            for(unsigned worker = 0; worker < parallel::n_workers - 1; ++worker)
             {
-                auto n_workers_launched =
-                    std::min(static_cast<unsigned>(parallel::n_workers),
-                             static_cast<unsigned>(n_boundaries -
-                                                   n_boundaries_done)) -
-                    1;
-
-                std::vector<std::future<void>> results;
-                results.reserve(n_workers_launched);
-
-                unsigned worker = 0;
-
-                for(; worker < n_workers_launched; ++worker)
-                {
-                    results.emplace_back(
-                        m_pool->enqueue(detail::enforce_boundary,
-                                        n_boundaries_done++,
-                                        m_worker[worker].get(),
-                                        m_cost.get(),
-                                        m_grid.get()));
-                }
-
-                detail::enforce_boundary(n_boundaries_done++,
-                                         m_worker[worker].get(),
-                                         m_cost.get(),
-                                         m_grid.get());
-                sync(results);
+                results.emplace_back(m_pool->enqueue(detail::enforce_boundary,
+                                                     m_queue.get(),
+                                                     m_cost.get(),
+                                                     m_grid.get()));
             }
+
+            // Done with scheduling, main thread does work itself.
+            detail::sweep(n_sweeps - 1,
+                          m_queue.get(),
+                          m_cost.get(),
+                          m_grid.get(),
+                          m_hamiltonian,
+                          m_viscosity);
+
+            detail::enforce_boundary(m_queue.get(), m_cost.get(), m_grid.get());
+
+            sync(results);
 
             return merge() < m_tolerance;
         }

@@ -26,10 +26,13 @@
 #include "solver_internals.hpp"
 #include "data.hpp"
 #include "grid.hpp"
+#include "queue.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <numeric>
+
+#include <iostream>
 
 namespace fsm
 {
@@ -93,15 +96,17 @@ namespace fsm
             }
 
             void sweep(index_t dir,
-                       data::data_t* soln,
+                       queue::queue_t* queue,
                        data::data_t const* cost,
                        grid::grid_t const* grid,
                        hamiltonian_t const& hamiltonian,
                        std::function<vector_t(input_t const&)> const& viscosity)
             {
-                assert(soln != nullptr);
+                assert(queue != nullptr);
                 assert(cost != nullptr);
                 assert(grid != nullptr);
+
+                data::data_t* soln = queue->deque();
 
                 for(auto const& i : grid::interior_visitor_t{ *grid, dir })
                 {
@@ -131,6 +136,8 @@ namespace fsm
 #endif
                     }
                 }
+
+                queue->enqueue(soln);
             }
 
             inline scalar_t update_boundary(index_t index,
@@ -152,27 +159,30 @@ namespace fsm
                                 soln->at(index));
             }
 
-            void enforce_boundary(index_t boundary,
-                                  data::data_t* soln,
+            void enforce_boundary(queue::queue_t* queue,
                                   data::data_t const* cost,
                                   grid::grid_t const* grid)
             {
-                assert(soln != nullptr);
+                assert(queue != nullptr);
                 assert(grid != nullptr);
 
-                /* for(auto i = grid->next_in_boundary(grid->npts(), boundary);
-                 */
-                /*     i != grid->npts(); */
-                /*     i = grid->next_in_boundary(i, boundary)) */
-                for(auto const& i : grid::boundary_visitor_t{ *grid, boundary })
+                data::data_t* soln = queue->deque();
+
+                for(index_t boundary = 0; boundary < n_boundaries; ++boundary)
                 {
-                    if(cost->at(i) > scalar_t{ 0.0 })
+                    for(auto const& i :
+                        grid::boundary_visitor_t{ *grid, boundary })
                     {
-                        soln->at(i) =
-                            std::min(update_boundary(i, boundary, soln, grid),
-                                     soln->at(i));
+                        if(cost->at(i) > scalar_t{ 0.0 })
+                        {
+                            soln->at(i) = std::min(
+                                update_boundary(i, boundary, soln, grid),
+                                soln->at(i));
+                        }
                     }
                 }
+
+                queue->enqueue(soln);
             }
         }    // namespace detail
     }        // namespace solver

@@ -7,7 +7,8 @@ add_library(fsm
             src/solver_internals.cpp
             src/grid.cpp
             src/data.cpp
-            src/io.cpp)
+            src/io.cpp
+            src/queue.cpp)
 
 target_compile_features(fsm PUBLIC cxx_std_14)
 
@@ -18,7 +19,4 @@ target_compile_options(fsm
                                -pedantic)
 
 target_include_directories(fsm PUBLIC include PRIVATE src)
-target_link_libraries(fsm
-                      PRIVATE h5cpp
-                      PUBLIC thread_pool
-                             concurrent_queue)
+target_link_libraries(fsm PRIVATE h5cpp PUBLIC thread_pool)

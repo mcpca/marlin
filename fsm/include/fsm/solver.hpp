@@ -35,10 +35,6 @@
 #include "defs.hpp"
 
 #include "ThreadPool/ThreadPool.h"
-#include "concurrentqueue/concurrentqueue.h"
-
-template<typename T>
-using queue_t = moodycamel::ConcurrentQueue<T>;
 
 namespace fsm
 {
@@ -49,6 +45,10 @@ namespace fsm
     namespace data
     {
         class data_t;
+    }
+    namespace queue
+    {
+        class queue_t;
     }
 
     namespace solver
@@ -110,8 +110,8 @@ namespace fsm
             std::function<vector_t(input_t const&)> m_viscosity;
             scalar_t m_tolerance;
 
-            std::unique_ptr<ThreadPool> m_pool = nullptr;
-            queue_t<data::data_t*> m_queue;
+            std::unique_ptr<ThreadPool> m_pool;
+            std::unique_ptr<queue::queue_t> m_queue;
         };
     }    // namespace solver
 }    // namespace fsm

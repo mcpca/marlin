@@ -23,41 +23,25 @@
 ////////////////////////////////////////////////////////////////////////////////
 // https://github.com/mcpca/fsm
 
-#pragma once
+#include "queue.hpp"
 
-#include "fsm/defs.hpp"
+using lock_t = std::lock_guard<std::mutex>;
 
-namespace grid
-{
-    struct grid_t;
-}
-namespace data
-{
-    class data_t;
-}
-namespace queue
-{
-    class queue_t;
-}
-
-namespace fsm
-{
-    namespace solver
-    {
-        namespace detail
+namespace fsm {
+    namespace queue {
+        data::data_t* queue_t::deque()
         {
-            void sweep(
-                index_t dir,
-                queue::queue_t* queue,
-                data::data_t const* cost,
-                grid::grid_t const* grid,
-                hamiltonian_t const& hamiltonian,
-                std::function<vector_t(input_t const&)> const& viscosity);
+            lock_t _(m_mutex);
+            auto* p = m_queue.back();
+            m_queue.pop();
 
-            void enforce_boundary(queue::queue_t* queue,
-                                  data::data_t const* cost,
-                                  grid::grid_t const* grid);
+            return p;
+        }
 
-        }    // namespace detail
-    }        // namespace solver
-}    // namespace fsm
+        void queue_t::enqueue(data::data_t* const& elem)
+        {
+            lock_t _(m_mutex);
+            m_queue.push(elem);
+        }
+    }
+}

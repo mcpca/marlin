@@ -23,41 +23,23 @@
 ////////////////////////////////////////////////////////////////////////////////
 // https://github.com/mcpca/fsm
 
-#pragma once
+#include <queue>
+#include <mutex>
 
-#include "fsm/defs.hpp"
+#include "data.hpp"
 
-namespace grid
-{
-    struct grid_t;
+namespace fsm {
+    namespace queue {
+        class queue_t {
+            public:
+                queue_t() = default;
+
+                data::data_t* deque();
+                void enqueue(data::data_t* const& elem);
+
+            private:
+                std::queue<data::data_t*> m_queue;
+                std::mutex m_mutex;
+        };
+    }
 }
-namespace data
-{
-    class data_t;
-}
-namespace queue
-{
-    class queue_t;
-}
-
-namespace fsm
-{
-    namespace solver
-    {
-        namespace detail
-        {
-            void sweep(
-                index_t dir,
-                queue::queue_t* queue,
-                data::data_t const* cost,
-                grid::grid_t const* grid,
-                hamiltonian_t const& hamiltonian,
-                std::function<vector_t(input_t const&)> const& viscosity);
-
-            void enforce_boundary(queue::queue_t* queue,
-                                  data::data_t const* cost,
-                                  grid::grid_t const* grid);
-
-        }    // namespace detail
-    }        // namespace solver
-}    // namespace fsm
