@@ -98,7 +98,8 @@ namespace fsm
             std::string m_filename;
             hamiltonian_t m_hamiltonian;
             std::unique_ptr<grid::grid_t> m_grid;
-            std::vector<std::unique_ptr<data::data_t>> m_soln;
+            std::unique_ptr<data::data_t> m_soln;
+            std::vector<std::unique_ptr<data::data_t>> m_worker;
             std::unique_ptr<data::data_t> m_cost;
 
             //! Numerical parameters.

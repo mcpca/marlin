@@ -89,17 +89,18 @@ namespace fsm
             : m_filename(filename),
               m_hamiltonian(hamiltonian),
               m_grid(std::make_unique<grid::grid_t>(grid)),
-              m_soln(),
+              m_soln(std::make_unique<data::data_t>(m_grid->npts(),
+                                                    params.maxval)),
               m_cost(std::make_unique<data::data_t>(std::move(cost))),
               m_viscosity(viscosity),
               m_tolerance(params.tolerance),
               m_pool(std::make_unique<ThreadPool>(parallel::n_workers))
         {
-            m_soln.reserve(parallel::n_workers + 1);
+            m_worker.reserve(parallel::n_workers);
 
-            for(unsigned i = 0; i < parallel::n_workers + 1; ++i)
+            for(unsigned i = 0; i < parallel::n_workers; ++i)
             {
-                m_soln.emplace_back(std::make_unique<data::data_t>(
+                m_worker.emplace_back(std::make_unique<data::data_t>(
                     m_grid->npts(), params.maxval));
             }
         }
@@ -127,8 +128,7 @@ namespace fsm
 
             std::cout << "Done. Writing to " << m_filename << "..."
                       << std::endl;
-            io::write(
-                m_filename, "value_function", *(m_soln[0]), m_grid->size());
+            io::write(m_filename, "value_function", *m_soln, m_grid->size());
         }
 
         void solver_t::initialize()
@@ -143,9 +143,11 @@ namespace fsm
 #ifndef NDEBUG
                     ++ntargetpts;
 #endif
-                    for(unsigned j = 0; j < m_soln.size(); ++j)
+                    m_soln->at(i) = -(m_cost->at(i) + scalar_t{ 1.0 });
+
+                    for(unsigned j = 0; j < m_worker.size(); ++j)
                     {
-                        m_soln[j]->at(i) = -(m_cost->at(i) + scalar_t{ 1.0 });
+                        m_worker[j]->at(i) = m_soln->at(i);
                     }
                 }
             }
@@ -183,7 +185,7 @@ namespace fsm
                     results.emplace_back(
                         m_pool->enqueue(detail::sweep,
                                         n_sweeps_done++,
-                                        m_soln[1 + worker].get(),
+                                        m_worker[worker].get(),
                                         m_cost.get(),
                                         m_grid.get(),
                                         m_hamiltonian,
@@ -191,7 +193,7 @@ namespace fsm
                 }
 
                 detail::sweep(n_sweeps_done++,
-                              m_soln[1 + worker].get(),
+                              m_worker[worker].get(),
                               m_cost.get(),
                               m_grid.get(),
                               m_hamiltonian,
@@ -220,13 +222,13 @@ namespace fsm
                     results.emplace_back(
                         m_pool->enqueue(detail::enforce_boundary,
                                         n_boundaries_done++,
-                                        m_soln[1 + worker].get(),
+                                        m_worker[worker].get(),
                                         m_cost.get(),
                                         m_grid.get()));
                 }
 
                 detail::enforce_boundary(n_boundaries_done++,
-                                         m_soln[1 + worker].get(),
+                                         m_worker[worker].get(),
                                          m_cost.get(),
                                          m_grid.get());
                 sync(results);
@@ -241,23 +243,23 @@ namespace fsm
 
             for(index_t i = 0; i < m_grid->npts(); ++i)
             {
-                auto old = m_soln[0]->at(i);
+                auto old = m_soln->at(i);
 
-                m_soln[0]->at(i) =
-                    std::min_element(std::begin(m_soln),
-                                     std::end(m_soln),
+                m_soln->at(i) =
+                    std::min_element(std::begin(m_worker),
+                                     std::end(m_worker),
                                      [&](auto const& a, auto const& b) {
                                          return a->at(i) < b->at(i);
                                      })
                         ->get()
                         ->at(i);
 
-                for(unsigned j = 1; j < m_soln.size(); ++j)
+                for(unsigned j = 0; j < m_worker.size(); ++j)
                 {
-                    m_soln[j]->at(i) = m_soln[0]->at(i);
+                    m_worker[j]->at(i) = m_soln->at(i);
                 }
 
-                diff = std::max(diff, old - m_soln[0]->at(i));
+                diff = std::max(diff, old - m_soln->at(i));
             }
 
             return diff;
