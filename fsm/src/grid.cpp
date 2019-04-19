@@ -236,7 +236,8 @@ namespace fsm
         }
 
         interior_visitor_t::interior_visitor_t(grid_t const& grid, index_t dir)
-            : m_gridpoint(&grid, dir){};
+            : m_gridpoint(&grid, dir)
+        {}
 
         interior_visitor_t::gridpoint_t::gridpoint_t(grid_t const* grid,
                                                      index_t dir)
@@ -283,7 +284,8 @@ namespace fsm
         }
 
         boundary_visitor_t::boundary_visitor_t(grid_t const& grid, index_t dir)
-            : m_gridpoint(&grid, dir){};
+            : m_gridpoint(&grid, dir)
+        {}
 
         boundary_visitor_t::gridpoint_t::gridpoint_t(grid_t const* grid,
                                                      index_t boundary)
