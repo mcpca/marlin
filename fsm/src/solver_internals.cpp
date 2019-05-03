@@ -32,8 +32,6 @@
 #include <cassert>
 #include <numeric>
 
-#include <iostream>
-
 namespace fsm
 {
     namespace solver
