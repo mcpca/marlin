@@ -145,15 +145,17 @@ namespace fsm
             {
                 point_t p = point(idx);
 
-                p[0] += static_cast<bool>(dir & 0x01) ? -1 : +1;
+                p[0] += backwards(dir, 0) ? -1 : +1;
 
                 for(auto i = 0; i < dim - 1; ++i)
                 {
-                    if(p[i] == 0 || p[i] == m_size[i] - 1)
+                    if(p[i] != 0 && p[i] != m_size[i] - 1)
                     {
-                        p[i] = backwards(dir, i) ? m_size[i] - 2 : 1;
-                        p[i + 1] += backwards(dir, i + 1) ? -1 : +1;
+                        break;
                     }
+
+                    p[i] = backwards(dir, i) ? m_size[i] - 2 : 1;
+                    p[i + 1] += backwards(dir, i + 1) ? -1 : +1;
                 }
 
                 if(p[dim - 1] == 0 || p[dim - 1] == m_size[dim - 1] - 1)
