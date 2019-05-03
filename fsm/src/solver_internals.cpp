@@ -46,7 +46,7 @@ namespace fsm
                 vector_t avgs;
             };
 
-            inline update_data_internal_t estimate_p(point_t point,
+            inline update_data_internal_t estimate_p(point_t const& point,
                                                      data::data_t const* soln,
                                                      grid::grid_t const* grid)
             {
@@ -58,8 +58,10 @@ namespace fsm
                 for(index_t i = 0; i < dim; ++i)
                 {
                     auto neighbor = point;
+
                     neighbor[i] += 1;
                     auto right = soln->at(grid->index(neighbor));
+
                     neighbor[i] -= 2;
                     auto left = soln->at(grid->index(neighbor));
 
