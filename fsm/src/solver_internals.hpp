@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "fsm/defs.hpp"
 
 namespace grid
@@ -57,6 +59,11 @@ namespace fsm
             void enforce_boundary(queue::queue_t* queue,
                                   data::data_t const* cost,
                                   grid::grid_t const* grid);
+
+            scalar_t merge(
+                data::data_t* soln,
+                std::vector<std::unique_ptr<data::data_t>>* worker_soln,
+                std::pair<index_t, index_t> const& slice);
 
         }    // namespace detail
     }        // namespace solver

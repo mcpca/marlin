@@ -208,35 +208,37 @@ namespace fsm
 
             sync(results);
 
-            return merge() < m_tolerance;
-        }
+            std::vector<std::future<scalar_t>> merged;
+            merged.reserve(parallel::n_workers - 1);
 
-        scalar_t solver_t::merge()
-        {
-            auto diff = scalar_t{ 0 };
+            auto points_per_worker = m_grid->npts() / parallel::n_workers;
 
-            for(index_t i = 0; i < m_grid->npts(); ++i)
+            for(unsigned worker = 0; worker < parallel::n_workers - 1; ++worker)
             {
-                auto old = m_soln->at(i);
+                auto start = worker * points_per_worker;
+                auto end = start + points_per_worker;
 
-                m_soln->at(i) =
-                    std::min_element(std::begin(m_worker),
-                                     std::end(m_worker),
-                                     [&](auto const& a, auto const& b) {
-                                         return a->at(i) < b->at(i);
-                                     })
-                        ->get()
-                        ->at(i);
-
-                for(unsigned j = 0; j < m_worker.size(); ++j)
-                {
-                    m_worker[j]->at(i) = m_soln->at(i);
-                }
-
-                diff = std::max(diff, old - m_soln->at(i));
+                merged.emplace_back(
+                    m_pool->enqueue(detail::merge,
+                                    m_soln.get(),
+                                    &m_worker,
+                                    std::make_pair(start, end)));
             }
 
-            return diff;
+            auto diff = detail::merge(
+                m_soln.get(),
+                &m_worker,
+                std::make_pair(
+                    index_t{ (parallel::n_workers - 1) * points_per_worker },
+                    index_t{ m_grid->npts() }));
+
+            for(auto&& e : merged)
+            {
+                auto e_val = e.get();
+                diff = std::max(diff, e_val);
+            }
+
+            return diff < m_tolerance;
         }
     }    // namespace solver
 }    // namespace fsm

@@ -186,6 +186,42 @@ namespace fsm
 
                 queue->enqueue(soln);
             }
+
+            scalar_t merge(
+                data::data_t* soln,
+                std::vector<std::unique_ptr<data::data_t>>* worker_soln,
+                std::pair<index_t, index_t> const& slice)
+            {
+                assert(soln != nullptr);
+                assert(worker_soln != nullptr);
+                assert(worker_soln->size() == fsm::parallel::n_workers);
+
+                auto diff = scalar_t{ 0 };
+
+                for(index_t i = slice.first; i < slice.second; ++i)
+                {
+                    auto old = soln->at(i);
+
+                    soln->at(i) =
+                        std::min_element(std::begin(*worker_soln),
+                                         std::end(*worker_soln),
+                                         [&](auto const& a, auto const& b) {
+                                             return a->at(i) < b->at(i);
+                                         })
+                            ->get()
+                            ->at(i);
+
+                    for(unsigned j = 0; j < worker_soln->size(); ++j)
+                    {
+                        (*worker_soln)[j]->at(i) = soln->at(i);
+                    }
+
+                    diff = std::max(diff, old - soln->at(i));
+                }
+
+                return diff;
+            }
+
         }    // namespace detail
     }        // namespace solver
 }    // namespace fsm
