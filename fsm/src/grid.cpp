@@ -44,7 +44,7 @@ namespace fsm
               m_h([&] {
                   vector_t h;
 
-                  for(index_t i = 0; i < dim; ++i)
+                  for(auto i = 0; i < dim; ++i)
                   {
                       h[i] = (vertices[i].second - vertices[i].first) /
                              (m_size[i] - 1);
@@ -54,7 +54,7 @@ namespace fsm
               }())
         {
             assert([this] {
-                for(index_t i = 0; i < dim; ++i)
+                for(auto i = 0; i < dim; ++i)
                 {
                     if(m_h[i] <= 0)
                         return false;
@@ -99,7 +99,7 @@ namespace fsm
         index_t grid_t::index(point_t const& point) const
         {
             assert([&] {
-                for(index_t i = 0; i < dim; ++i)
+                for(auto i = 0; i < dim; ++i)
                     if(point[i] >= m_size[i])
                         return false;
                 return true;
@@ -134,7 +134,7 @@ namespace fsm
             {
                 point_t p;
 
-                for(index_t i = 0; i < dim; ++i)
+                for(auto i = 0; i < dim; ++i)
                 {
                     p[i] = backwards(dir, i) ? m_size[i] - 2 : 1;
                 }
@@ -147,7 +147,7 @@ namespace fsm
 
                 p[0] += static_cast<bool>(dir & 0x01) ? -1 : +1;
 
-                for(index_t i = 0; i < dim - 1; ++i)
+                for(auto i = 0; i < dim - 1; ++i)
                 {
                     if(p[i] == 0 || p[i] == m_size[i] - 1)
                     {
@@ -188,7 +188,7 @@ namespace fsm
             {
                 point_t p;
 
-                for(index_t i = 0; i < dim; ++i)
+                for(auto i = 0; i < dim; ++i)
                 {
                     p[i] = 0;
                 }
@@ -211,7 +211,7 @@ namespace fsm
                 // dimension to the dimension right before.
                 p[rotate(boundary_dim, 0)] += 1;
 
-                for(index_t i = 0; i < dim - 2; ++i)
+                for(auto i = 0; i < dim - 2; ++i)
                 {
                     if(p[rotate(boundary_dim, i)] ==
                        m_size[rotate(boundary_dim, i)])

@@ -55,7 +55,7 @@ namespace fsm
 
                 update_data_internal_t res;
 
-                for(index_t i = 0; i < dim; ++i)
+                for(auto i = 0; i < dim; ++i)
                 {
                     auto neighbor = point;
 
