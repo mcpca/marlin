@@ -85,7 +85,7 @@ namespace fsm
         {
             assert(index < m_npts);
 
-            std::array<size_t, dim> point;
+            point_t point;
 
             for(auto i = dim; i > 0; --i)
             {
