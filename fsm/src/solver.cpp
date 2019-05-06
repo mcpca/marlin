@@ -105,7 +105,10 @@ namespace fsm
                 m_worker.emplace_back(std::make_unique<data::data_t>(
                     m_grid->npts(), params.maxval));
 
-                m_queue->enqueue(m_worker.back().get());
+                if(i < parallel::n_workers - 1)
+                {
+                    m_queue->enqueue(m_worker.back().get());
+                }
             }
         }
 
@@ -178,7 +181,7 @@ namespace fsm
             // The last sweep is done by the main thread.
             for(auto dir = 0; dir < n_sweeps - 1; ++dir)
             {
-                results.emplace_back(m_pool->enqueue(detail::sweep,
+                results.emplace_back(m_pool->enqueue(detail::sweep_q,
                                                      dir,
                                                      m_queue.get(),
                                                      m_cost.get(),
@@ -191,7 +194,7 @@ namespace fsm
             // arrays.
             for(unsigned worker = 0; worker < parallel::n_workers - 1; ++worker)
             {
-                results.emplace_back(m_pool->enqueue(detail::enforce_boundary,
+                results.emplace_back(m_pool->enqueue(detail::enforce_boundary_q,
                                                      m_queue.get(),
                                                      m_cost.get(),
                                                      m_grid.get()));
@@ -199,13 +202,14 @@ namespace fsm
 
             // Done with scheduling, main thread does work itself.
             detail::sweep(n_sweeps - 1,
-                          m_queue.get(),
+                          m_worker.back().get(),
                           m_cost.get(),
                           m_grid.get(),
                           m_hamiltonian,
                           m_viscosity);
 
-            detail::enforce_boundary(m_queue.get(), m_cost.get(), m_grid.get());
+            detail::enforce_boundary(
+                m_worker.back().get(), m_cost.get(), m_grid.get());
 
             sync(results);
 

@@ -25,31 +25,30 @@
 
 #pragma once
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "fsm/defs.hpp"
 
-namespace grid
-{
-    struct grid_t;
-}
-namespace data
-{
-    class data_t;
-}
-namespace queue
-{
-    class queue_t;
-}
-
 namespace fsm
 {
+    namespace grid
+    {
+        struct grid_t;
+    }
+    namespace data
+    {
+        class data_t;
+    }
+    namespace queue
+    {
+        class queue_t;
+    }
     namespace solver
     {
         namespace detail
         {
-            void sweep(
+            void sweep_q(
                 index_t dir,
                 queue::queue_t* queue,
                 data::data_t const* cost,
@@ -57,7 +56,19 @@ namespace fsm
                 hamiltonian_t const& hamiltonian,
                 std::function<vector_t(input_t const&)> const& viscosity);
 
-            void enforce_boundary(queue::queue_t* queue,
+            void sweep(
+                index_t dir,
+                data::data_t* soln,
+                data::data_t const* cost,
+                grid::grid_t const* grid,
+                hamiltonian_t const& hamiltonian,
+                std::function<vector_t(input_t const&)> const& viscosity);
+
+            void enforce_boundary_q(queue::queue_t* queue,
+                                    data::data_t const* cost,
+                                    grid::grid_t const* grid);
+
+            void enforce_boundary(data::data_t* queue,
                                   data::data_t const* cost,
                                   grid::grid_t const* grid);
 
