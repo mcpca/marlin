@@ -163,9 +163,10 @@ namespace fsm
 
         void sync(std::vector<std::future<void>>& results)
         {
-            for_each(std::begin(results), std::end(results), [](auto& a) {
-                a.get();
-            });
+            for(auto&& r : results)
+            {
+                r.get();
+            }
         }
 
         bool solver_t::iterate()
