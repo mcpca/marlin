@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // MIT License
 //
-// Copyright (c) 2019 Miguel Aguiar
+// Copyright (c) 2020 Miguel Aguiar
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -95,30 +95,20 @@ namespace fsm
                                           std::divides<>());
             }
 
-            void sweep_q(
-                index_t dir,
-                queue::queue_t* queue,
-                data::data_t const* cost,
-                grid::grid_t const* grid,
-                hamiltonian_t const& hamiltonian,
-                std::function<vector_t(input_t const&)> const& viscosity)
-            {
-                assert(queue != nullptr);
-
-                auto soln = queue->deque();
-                sweep(dir, soln, cost, grid, hamiltonian, viscosity);
-                queue->enqueue(soln);
-            }
-
             void sweep(index_t dir,
-                       data::data_t* soln,
+                       queue::queue_t* queue,
                        data::data_t const* cost,
                        grid::grid_t const* grid,
                        hamiltonian_t const& hamiltonian,
                        std::function<vector_t(input_t const&)> const& viscosity)
             {
+                assert(queue != nullptr);
                 assert(cost != nullptr);
                 assert(grid != nullptr);
+
+                auto soln = queue->deque();
+
+                assert(soln != nullptr);
 
                 for(auto const& i : grid::interior_visitor_t{ *grid, dir })
                 {
@@ -150,6 +140,8 @@ namespace fsm
 #endif
                     }
                 }
+
+                queue->enqueue(soln);
             }
 
             inline scalar_t update_boundary(index_t index,
@@ -172,22 +164,16 @@ namespace fsm
                                 soln->at(index));
             }
 
-            void enforce_boundary_q(queue::queue_t* queue,
-                                    data::data_t const* cost,
-                                    grid::grid_t const* grid)
-            {
-                assert(queue != nullptr);
-
-                auto soln = queue->deque();
-                enforce_boundary(soln, cost, grid);
-                queue->enqueue(soln);
-            }
-
-            void enforce_boundary(data::data_t* soln,
+            void enforce_boundary(queue::queue_t* queue,
                                   data::data_t const* cost,
                                   grid::grid_t const* grid)
             {
+                assert(queue != nullptr);
                 assert(grid != nullptr);
+
+                auto soln = queue->deque();
+
+                assert(soln != nullptr);
 
                 for(index_t boundary = 0; boundary < n_boundaries; ++boundary)
                 {
@@ -202,12 +188,15 @@ namespace fsm
                         }
                     }
                 }
+
+                queue->enqueue(soln);
             }
 
             scalar_t merge(
                 data::data_t* soln,
                 std::vector<std::unique_ptr<data::data_t>>* worker_soln,
-                std::pair<index_t, index_t> const& slice)
+                index_t start,
+                index_t end)
             {
                 assert(soln != nullptr);
                 assert(worker_soln != nullptr);
@@ -215,7 +204,7 @@ namespace fsm
 
                 auto diff = scalar_t{ 0 };
 
-                for(index_t i = slice.first; i < slice.second; ++i)
+                for(index_t i = start; i < end; ++i)
                 {
                     auto const old = soln->at(i);
 
