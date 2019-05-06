@@ -3,6 +3,8 @@
 #include <numeric>
 #include "fsm/solver.hpp"
 
+#include "timer.hpp"
+
 int main()
 {
 #if FSM_N_DIMS == 2
@@ -62,7 +64,13 @@ int main()
     fsm::solver::solver_t s(
         "../data/geodesic.h5", h, vertices, viscosity, params);
 
+    timer::timer_t t;
+
     s.solve();
+
+    std::cout << "Took " << t.get_elapsed_sec<double>() << " seconds."
+              << std::endl;
+
 #endif
     return 0;
 }

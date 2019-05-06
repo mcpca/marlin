@@ -4,6 +4,8 @@
 #include <numeric>
 #include "fsm/solver.hpp"
 
+#include "timer.hpp"
+
 int main(int argc, char** argv)
 {
 #if FSM_N_DIMS == 2
@@ -39,7 +41,13 @@ int main(int argc, char** argv)
     fsm::solver::solver_t s(
         "../data/constant_field.h5", h, vertices, viscosity, params);
 
+    timer::timer_t t;
+
     s.solve();
+
+    std::cout << "Took " << t.get_elapsed_sec<double>() << " seconds."
+              << std::endl;
+
 #endif
     return 0;
 }
