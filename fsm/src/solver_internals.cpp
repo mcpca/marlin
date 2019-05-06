@@ -58,10 +58,10 @@ namespace fsm
                     auto neighbor = point;
 
                     neighbor[i] += 1;
-                    auto right = soln->at(grid->index(neighbor));
+                    auto const right = soln->at(grid->index(neighbor));
 
                     neighbor[i] -= 2;
-                    auto left = soln->at(grid->index(neighbor));
+                    auto const left = soln->at(grid->index(neighbor));
 
                     res.p[i] = (right - left) / (scalar_t{ 2.0 } * grid->h(i));
                     res.avgs[i] =
@@ -124,11 +124,12 @@ namespace fsm
                 {
                     if(cost->at(i) > scalar_t{ 0.0 })
                     {
-                        auto point = grid->point(i);
-                        auto data = estimate_p(point, soln, grid);
+                        auto const point = grid->point(i);
+                        auto const data = estimate_p(point, soln, grid);
 #ifdef FSM_USE_ROWMAJOR
-                        auto sigma = viscosity(i);
-                        auto scale_ = scale(sigma, grid->h());
+                        auto const sigma = viscosity(i);
+                        auto const scale_ = scale(sigma, grid->h());
+
                         soln->at(i) = std::min(update(hamiltonian(i, data.p),
                                                       scale_,
                                                       cost->at(i),
@@ -136,8 +137,9 @@ namespace fsm
                                                       sigma),
                                                soln->at(i));
 #else
-                        auto sigma = viscosity(point);
-                        auto scale_ = scale(sigma, grid->h());
+                        auto const sigma = viscosity(point);
+                        auto const scale_ = scale(sigma, grid->h());
+
                         soln->at(i) =
                             std::min(update(hamiltonian(point, data.p),
                                             scale_,
@@ -156,14 +158,15 @@ namespace fsm
                                             grid::grid_t const* grid)
             {
                 auto neighbor = grid->point(index);
-                auto boundary_dim = boundary >= dim ? boundary - dim : boundary;
+                auto const boundary_dim =
+                    boundary >= dim ? boundary - dim : boundary;
 
                 // Approximate based on the two points in a line orthogonal
                 // to the boundary closest to the current point.
                 neighbor[boundary_dim] += boundary >= dim ? -1 : +1;
-                auto outer = soln->at(grid->index(neighbor));
+                auto const outer = soln->at(grid->index(neighbor));
                 neighbor[boundary_dim] += boundary >= dim ? -1 : +1;
-                auto inner = soln->at(grid->index(neighbor));
+                auto const inner = soln->at(grid->index(neighbor));
 
                 return std::min(std::max(2 * outer - inner, inner),
                                 soln->at(index));
@@ -214,7 +217,7 @@ namespace fsm
 
                 for(index_t i = slice.first; i < slice.second; ++i)
                 {
-                    auto old = soln->at(i);
+                    auto const old = soln->at(i);
 
                     soln->at(i) =
                         std::min_element(std::begin(*worker_soln),

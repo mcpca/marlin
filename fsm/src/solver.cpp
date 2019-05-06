@@ -216,12 +216,12 @@ namespace fsm
             std::vector<std::future<scalar_t>> merged;
             merged.reserve(parallel::n_workers - 1);
 
-            auto points_per_worker = m_grid->npts() / parallel::n_workers;
+            auto const points_per_worker = m_grid->npts() / parallel::n_workers;
 
             for(unsigned worker = 0; worker < parallel::n_workers - 1; ++worker)
             {
-                auto start = worker * points_per_worker;
-                auto end = start + points_per_worker;
+                auto const start = worker * points_per_worker;
+                auto const end = start + points_per_worker;
 
                 merged.emplace_back(
                     m_pool->enqueue(detail::merge,
