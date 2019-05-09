@@ -28,16 +28,6 @@
 #include <array>
 #include <functional>
 
-#define FSM_IS_PARALLEL
-
-#ifndef FSM_IS_PARALLEL
-#    define FSM_N_WORKERS 1
-#endif
-
-#ifndef FSM_N_WORKERS
-#    include <thread>
-#endif
-
 #ifndef FSM_N_DIMS
 #    define FSM_N_DIMS 2
 #endif
@@ -65,17 +55,4 @@ namespace fsm
 
     using hamiltonian_t = std::function<double(input_t, vector_t)>;
 
-    namespace parallel
-    {
-#ifdef FSM_N_WORKERS
-        constexpr auto n_workers = FSM_N_WORKERS;
-
-        static_assert(n_workers > 0,
-                      "The number of threads must be greater than zero.");
-#else
-        const auto n_workers = std::thread::hardware_concurrency() >= n_sweeps
-                                   ? n_sweeps
-                                   : std::thread::hardware_concurrency();
-#endif
-    }    // namespace parallel
 }    // namespace fsm

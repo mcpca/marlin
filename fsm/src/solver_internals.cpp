@@ -30,7 +30,10 @@
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <numeric>
+
+#include <iostream>
 
 namespace fsm
 {
@@ -95,21 +98,14 @@ namespace fsm
                                           std::divides<>());
             }
 
-            void sweep(index_t dir,
-                       queue::queue_t* queue,
-                       data::data_t const* cost,
-                       grid::grid_t const* grid,
-                       hamiltonian_t const& hamiltonian,
-                       std::function<vector_t(input_t const&)> const& viscosity)
+            inline void sweep(
+                index_t dir,
+                data::data_t* soln,
+                data::data_t const* cost,
+                grid::grid_t const* grid,
+                hamiltonian_t const& hamiltonian,
+                std::function<vector_t(input_t const&)> const& viscosity)
             {
-                assert(queue != nullptr);
-                assert(cost != nullptr);
-                assert(grid != nullptr);
-
-                auto soln = queue->deque();
-
-                assert(soln != nullptr);
-
                 for(auto const& i : grid::interior_visitor_t{ *grid, dir })
                 {
                     if(cost->at(i) > scalar_t{ 0.0 })
@@ -140,8 +136,6 @@ namespace fsm
 #endif
                     }
                 }
-
-                queue->enqueue(soln);
             }
 
             inline scalar_t update_boundary(index_t index,
@@ -164,17 +158,10 @@ namespace fsm
                                 soln->at(index));
             }
 
-            void enforce_boundary(queue::queue_t* queue,
-                                  data::data_t const* cost,
-                                  grid::grid_t const* grid)
+            inline void enforce_boundary(data::data_t* soln,
+                                         data::data_t const* cost,
+                                         grid::grid_t const* grid)
             {
-                assert(queue != nullptr);
-                assert(grid != nullptr);
-
-                auto soln = queue->deque();
-
-                assert(soln != nullptr);
-
                 for(index_t boundary = 0; boundary < n_boundaries; ++boundary)
                 {
                     for(auto const& i :
@@ -188,15 +175,32 @@ namespace fsm
                         }
                     }
                 }
+            }
+
+            void work(index_t sweep_dir,
+                      queue::queue_t* queue,
+                      data::data_t const* cost,
+                      grid::grid_t const* grid,
+                      hamiltonian_t const& hamiltonian,
+                      std::function<vector_t(input_t const&)> const& viscosity)
+            {
+                assert(sweep_dir < n_sweeps);
+                assert(cost != nullptr);
+                assert(grid != nullptr);
+
+                auto soln = queue->deque();
+
+                sweep(sweep_dir, soln, cost, grid, hamiltonian, viscosity);
+                enforce_boundary(soln, cost, grid);
 
                 queue->enqueue(soln);
             }
 
-            scalar_t merge(
-                data::data_t* soln,
-                std::vector<std::unique_ptr<data::data_t>>* worker_soln,
-                index_t start,
-                index_t end)
+            scalar_t merge(data::data_t* soln,
+                           std::array<std::unique_ptr<data::data_t>, n_sweeps>*
+                               worker_soln,
+                           index_t start,
+                           index_t end)
             {
                 assert(soln != nullptr);
                 assert(worker_soln != nullptr);

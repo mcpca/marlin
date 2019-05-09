@@ -48,23 +48,18 @@ namespace fsm
     {
         namespace detail
         {
-            void sweep(
-                index_t dir,
-                queue::queue_t* queue,
-                data::data_t const* cost,
-                grid::grid_t const* grid,
-                hamiltonian_t const& hamiltonian,
-                std::function<vector_t(input_t const&)> const& viscosity);
+            void work(index_t sweep_dir,
+                      queue::queue_t* queue,
+                      data::data_t const* cost,
+                      grid::grid_t const* grid,
+                      hamiltonian_t const& hamiltonian,
+                      std::function<vector_t(input_t const&)> const& viscosity);
 
-            void enforce_boundary(queue::queue_t* queue,
-                                  data::data_t const* cost,
-                                  grid::grid_t const* grid);
-
-            scalar_t merge(
-                data::data_t* soln,
-                std::vector<std::unique_ptr<data::data_t>>* worker_soln,
-                index_t start,
-                index_t end);
+            scalar_t merge(data::data_t* soln,
+                           std::array<std::unique_ptr<data::data_t>, n_sweeps>*
+                               worker_soln,
+                           index_t start,
+                           index_t end);
 
         }    // namespace detail
     }        // namespace solver

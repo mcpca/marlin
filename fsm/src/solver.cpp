@@ -95,17 +95,14 @@ namespace fsm
               m_cost(std::make_unique<data::data_t>(std::move(cost))),
               m_viscosity(viscosity),
               m_tolerance(params.tolerance),
-              m_pool(std::make_unique<ThreadPool>(parallel::n_workers - 1)),
+              m_pool(std::make_unique<ThreadPool>(n_sweeps - 1)),
               m_queue(std::make_unique<queue::queue_t>())
         {
-            m_worker.reserve(parallel::n_workers);
-
-            for(unsigned i = 0; i < parallel::n_workers; ++i)
+            for(unsigned i = 0; i < n_sweeps; ++i)
             {
-                m_worker.emplace_back(std::make_unique<data::data_t>(
-                    m_grid->npts(), params.maxval));
-
-                m_queue->enqueue(m_worker.back().get());
+                m_worker[i] = std::make_unique<data::data_t>(m_grid->npts(),
+                                                             params.maxval);
+                m_queue->enqueue(m_worker[i].get());
             }
         }
 
@@ -113,8 +110,8 @@ namespace fsm
         {
             std::cout << "Initializing problem instance..." << std::endl;
             initialize();
-            std::cout << "Initialized. Solving (" << parallel::n_workers
-                      << " threads)..." << std::endl;
+            std::cout << "Initialized. Solving (" << n_sweeps << " threads)..."
+                      << std::endl;
 
 #ifndef NDEBUG
             auto niter = 0;
@@ -149,7 +146,7 @@ namespace fsm
 #endif
                     m_soln->at(i) = -(m_cost->at(i) + scalar_t{ 1.0 });
 
-                    for(unsigned j = 0; j < m_worker.size(); ++j)
+                    for(unsigned j = 0; j < n_sweeps; ++j)
                     {
                         m_worker[j]->at(i) = m_soln->at(i);
                     }
@@ -164,13 +161,13 @@ namespace fsm
         bool solver_t::iterate()
         {
             std::vector<std::future<void>> results;
-            results.reserve(n_sweeps + parallel::n_workers - 2);
+            results.reserve(n_sweeps - 1);
 
             // Schedule a sweep in each worker.
             // The last sweep is done by the main thread.
             for(auto dir = 0; dir < n_sweeps - 1; ++dir)
             {
-                results.emplace_back(m_pool->enqueue(detail::sweep,
+                results.emplace_back(m_pool->enqueue(detail::work,
                                                      dir,
                                                      m_queue.get(),
                                                      m_cost.get(),
@@ -179,37 +176,25 @@ namespace fsm
                                                      m_viscosity));
             }
 
-            // Each worker enforces boundary conditions on one of the data
-            // arrays.
-            for(unsigned worker = 0; worker < parallel::n_workers - 1; ++worker)
-            {
-                results.emplace_back(m_pool->enqueue(detail::enforce_boundary,
-                                                     m_queue.get(),
-                                                     m_cost.get(),
-                                                     m_grid.get()));
-            }
-
             // Done with scheduling, main thread does work itself.
-            detail::sweep(n_sweeps - 1,
-                          m_queue.get(),
-                          m_cost.get(),
-                          m_grid.get(),
-                          m_hamiltonian,
-                          m_viscosity);
-
-            detail::enforce_boundary(m_queue.get(), m_cost.get(), m_grid.get());
-
-            std::vector<std::future<scalar_t>> merged;
-            merged.reserve(parallel::n_workers - 1);
-
-            auto const points_per_worker = m_grid->npts() / parallel::n_workers;
+            detail::work(n_sweeps - 1,
+                         m_queue.get(),
+                         m_cost.get(),
+                         m_grid.get(),
+                         m_hamiltonian,
+                         m_viscosity);
 
             for(auto&& r : results)
             {
                 r.get();
             }
 
-            for(unsigned worker = 0; worker < parallel::n_workers - 1; ++worker)
+            std::vector<std::future<scalar_t>> merged;
+            merged.reserve(n_sweeps - 1);
+
+            auto const points_per_worker = m_grid->npts() / n_sweeps;
+
+            for(unsigned worker = 0; worker < n_sweeps - 1; ++worker)
             {
                 auto const start = worker * points_per_worker;
 
@@ -220,16 +205,19 @@ namespace fsm
                                                     start + points_per_worker));
             }
 
-            auto diff =
-                detail::merge(m_soln.get(),
-                              &m_worker,
-                              (parallel::n_workers - 1) * points_per_worker,
-                              m_grid->npts());
+            auto diff = detail::merge(m_soln.get(),
+                                      &m_worker,
+                                      (n_sweeps - 1) * points_per_worker,
+                                      m_grid->npts());
 
             for(auto&& e : merged)
             {
                 diff = std::max(diff, e.get());
             }
+
+#ifndef NDEBUG
+            std::cerr << "\t Delta = " << diff << '\n';
+#endif
 
             return diff < m_tolerance;
         }
