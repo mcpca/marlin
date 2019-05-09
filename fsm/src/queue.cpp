@@ -23,36 +23,25 @@
 ////////////////////////////////////////////////////////////////////////////////
 // https://github.com/mcpca/fsm
 
-#pragma once
+#include "queue.hpp"
 
-#include <array>
-#include <functional>
+using lock_t = std::lock_guard<std::mutex>;
 
-#ifndef FSM_N_DIMS
-#    define FSM_N_DIMS 2
-#endif
+namespace fsm {
+    namespace queue {
+        data::data_t* queue_t::deque()
+        {
+            lock_t _(m_mutex);
+            auto* p = m_queue.back();
+            m_queue.pop();
 
-namespace fsm
-{
-    constexpr auto dim = FSM_N_DIMS;
+            return p;
+        }
 
-    static_assert(dim > 1, "The number of dimensions must be at least two.");
-
-    constexpr auto n_sweeps = 1 << dim;
-    constexpr auto n_boundaries = 2 * dim;
-
-    using index_t = size_t;
-    using point_t = std::array<index_t, dim>;
-
-    using scalar_t = float;
-    using vector_t = std::array<scalar_t, dim>;
-
-#ifdef FSM_USE_ROWMAJOR
-    using input_t = index_t;
-#else
-    using input_t = point_t;
-#endif
-
-    using hamiltonian_t = std::function<double(input_t, vector_t)>;
-
-}    // namespace fsm
+        void queue_t::enqueue(data::data_t* const& elem)
+        {
+            lock_t _(m_mutex);
+            m_queue.push(elem);
+        }
+    }
+}

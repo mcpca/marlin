@@ -27,8 +27,6 @@
 #include <cassert>
 #include <numeric>
 
-#include <iostream>
-
 #include "grid.hpp"
 
 namespace fsm
@@ -46,7 +44,7 @@ namespace fsm
               m_h([&] {
                   vector_t h;
 
-                  for(index_t i = 0; i < dim; ++i)
+                  for(auto i = 0; i < dim; ++i)
                   {
                       h[i] = (vertices[i].second - vertices[i].first) /
                              (m_size[i] - 1);
@@ -56,7 +54,7 @@ namespace fsm
               }())
         {
             assert([this] {
-                for(index_t i = 0; i < dim; ++i)
+                for(auto i = 0; i < dim; ++i)
                 {
                     if(m_h[i] <= 0)
                         return false;
@@ -87,7 +85,7 @@ namespace fsm
         {
             assert(index < m_npts);
 
-            std::array<size_t, dim> point;
+            point_t point;
 
             for(auto i = dim; i > 0; --i)
             {
@@ -101,27 +99,20 @@ namespace fsm
         index_t grid_t::index(point_t const& point) const
         {
             assert([&] {
-                for(index_t i = 0; i < dim; ++i)
+                for(auto i = 0; i < dim; ++i)
                     if(point[i] >= m_size[i])
                         return false;
                 return true;
             }());
 
-            auto offset = 0ul;
+            index_t offset = 0;
 
-            if(dim == 1)
+            for(auto i = 0; i < dim - 1; ++i)
             {
-                offset = point[0];
+                offset = m_size[i + 1] * (point[i] + offset);
             }
-            else
-            {
-                for(auto i = 0ul; i < dim - 1; ++i)
-                {
-                    offset = m_size[i + 1] * (point[i] + offset);
-                }
 
-                offset += point[dim - 1];
-            }
+            offset += point[dim - 1];
 
             return offset;
         }
@@ -143,7 +134,7 @@ namespace fsm
             {
                 point_t p;
 
-                for(index_t i = 0; i < dim; ++i)
+                for(auto i = 0; i < dim; ++i)
                 {
                     p[i] = backwards(dir, i) ? m_size[i] - 2 : 1;
                 }
@@ -154,15 +145,17 @@ namespace fsm
             {
                 point_t p = point(idx);
 
-                p[0] += static_cast<bool>(dir & 0x01) ? -1 : +1;
+                p[0] += backwards(dir, 0) ? -1 : +1;
 
-                for(index_t i = 0; i < dim - 1; ++i)
+                for(auto i = 0; i < dim - 1; ++i)
                 {
-                    if(p[i] == 0 || p[i] == m_size[i] - 1)
+                    if(p[i] != 0 && p[i] != m_size[i] - 1)
                     {
-                        p[i] = backwards(dir, i) ? m_size[i] - 2 : 1;
-                        p[i + 1] += backwards(dir, i + 1) ? -1 : +1;
+                        break;
                     }
+
+                    p[i] = backwards(dir, i) ? m_size[i] - 2 : 1;
+                    p[i + 1] += backwards(dir, i + 1) ? -1 : +1;
                 }
 
                 if(p[dim - 1] == 0 || p[dim - 1] == m_size[dim - 1] - 1)
@@ -197,7 +190,7 @@ namespace fsm
             {
                 point_t p;
 
-                for(index_t i = 0; i < dim; ++i)
+                for(auto i = 0; i < dim; ++i)
                 {
                     p[i] = 0;
                 }
@@ -220,7 +213,7 @@ namespace fsm
                 // dimension to the dimension right before.
                 p[rotate(boundary_dim, 0)] += 1;
 
-                for(index_t i = 0; i < dim - 2; ++i)
+                for(auto i = 0; i < dim - 2; ++i)
                 {
                     if(p[rotate(boundary_dim, i)] ==
                        m_size[rotate(boundary_dim, i)])
@@ -244,5 +237,102 @@ namespace fsm
             return idx;
         }
 
+        interior_visitor_t::interior_visitor_t(grid_t const& grid, index_t dir)
+            : m_gridpoint(&grid, dir)
+        {}
+
+        interior_visitor_t::gridpoint_t::gridpoint_t(grid_t const* grid,
+                                                     index_t dir)
+            : m_index(), m_grid(grid), m_dir(dir)
+        {}
+
+        interior_visitor_t::gridpoint_t::gridpoint_t(index_t dir, index_t index)
+            : m_index(index), m_grid(nullptr), m_dir(dir)
+        {}
+
+        interior_visitor_t::gridpoint_t& interior_visitor_t::gridpoint_t::
+        operator++()
+        {
+            m_index = m_grid->next(m_index, m_dir);
+            return *this;
+        }
+
+        index_t interior_visitor_t::gridpoint_t::operator*() const
+        {
+            return m_index;
+        }
+
+        interior_visitor_t::gridpoint_t const& interior_visitor_t::begin()
+        {
+            m_gridpoint.m_index = m_gridpoint.m_grid->npts();
+            return ++m_gridpoint;
+        }
+
+        interior_visitor_t::gridpoint_t interior_visitor_t::end()
+        {
+            return gridpoint_t{ m_gridpoint.m_dir, m_gridpoint.m_grid->npts() };
+        }
+
+        bool operator==(interior_visitor_t::gridpoint_t const& a,
+                        interior_visitor_t::gridpoint_t const& b)
+        {
+            return (a.m_index == b.m_index) && (a.m_dir == b.m_dir);
+        }
+
+        bool operator!=(interior_visitor_t::gridpoint_t const& a,
+                        interior_visitor_t::gridpoint_t const& b)
+        {
+            return (a.m_index != b.m_index) || (a.m_dir != b.m_dir);
+        }
+
+        boundary_visitor_t::boundary_visitor_t(grid_t const& grid, index_t dir)
+            : m_gridpoint(&grid, dir)
+        {}
+
+        boundary_visitor_t::gridpoint_t::gridpoint_t(grid_t const* grid,
+                                                     index_t boundary)
+            : m_index(), m_grid(grid), m_boundary(boundary)
+        {}
+
+        boundary_visitor_t::gridpoint_t::gridpoint_t(index_t boundary,
+                                                     index_t index)
+            : m_index(index), m_grid(nullptr), m_boundary(boundary)
+        {}
+
+        boundary_visitor_t::gridpoint_t& boundary_visitor_t::gridpoint_t::
+        operator++()
+        {
+            m_index = m_grid->next_in_boundary(m_index, m_boundary);
+            return *this;
+        }
+
+        index_t boundary_visitor_t::gridpoint_t::operator*() const
+        {
+            return m_index;
+        }
+
+        boundary_visitor_t::gridpoint_t const& boundary_visitor_t::begin()
+        {
+            m_gridpoint.m_index = m_gridpoint.m_grid->npts();
+            return ++m_gridpoint;
+        }
+
+        boundary_visitor_t::gridpoint_t boundary_visitor_t::end()
+        {
+            return gridpoint_t{ m_gridpoint.m_boundary,
+                                m_gridpoint.m_grid->npts() };
+        }
+
+        bool operator==(boundary_visitor_t::gridpoint_t const& a,
+                        boundary_visitor_t::gridpoint_t const& b)
+        {
+            return (a.m_index == b.m_index) && (a.m_boundary == b.m_boundary);
+        }
+
+        bool operator!=(boundary_visitor_t::gridpoint_t const& a,
+                        boundary_visitor_t::gridpoint_t const& b)
+        {
+            return (a.m_index != b.m_index) || (a.m_boundary != b.m_boundary);
+        }
     }    // namespace grid
 }    // namespace fsm

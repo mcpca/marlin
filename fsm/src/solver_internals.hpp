@@ -25,34 +25,42 @@
 
 #pragma once
 
-#include <array>
-#include <functional>
+#include <memory>
+#include <vector>
 
-#ifndef FSM_N_DIMS
-#    define FSM_N_DIMS 2
-#endif
+#include "fsm/defs.hpp"
 
 namespace fsm
 {
-    constexpr auto dim = FSM_N_DIMS;
+    namespace grid
+    {
+        struct grid_t;
+    }
+    namespace data
+    {
+        class data_t;
+    }
+    namespace queue
+    {
+        class queue_t;
+    }
+    namespace solver
+    {
+        namespace detail
+        {
+            void work(index_t sweep_dir,
+                      queue::queue_t* queue,
+                      data::data_t const* cost,
+                      grid::grid_t const* grid,
+                      hamiltonian_t const& hamiltonian,
+                      std::function<vector_t(input_t const&)> const& viscosity);
 
-    static_assert(dim > 1, "The number of dimensions must be at least two.");
+            scalar_t merge(data::data_t* soln,
+                           std::array<std::unique_ptr<data::data_t>, n_sweeps>*
+                               worker_soln,
+                           index_t start,
+                           index_t end);
 
-    constexpr auto n_sweeps = 1 << dim;
-    constexpr auto n_boundaries = 2 * dim;
-
-    using index_t = size_t;
-    using point_t = std::array<index_t, dim>;
-
-    using scalar_t = float;
-    using vector_t = std::array<scalar_t, dim>;
-
-#ifdef FSM_USE_ROWMAJOR
-    using input_t = index_t;
-#else
-    using input_t = point_t;
-#endif
-
-    using hamiltonian_t = std::function<double(input_t, vector_t)>;
-
+        }    // namespace detail
+    }        // namespace solver
 }    // namespace fsm

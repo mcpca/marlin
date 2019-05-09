@@ -10,6 +10,8 @@ parser.add_argument('--npts', type=int, default=201,
                     help='Number of gridpoints per dimension.')
 parser.add_argument('--target', type=float, nargs=2, default=[0.0, 0.0],
                     help='Coordinates of the target point.')
+parser.add_argument('--no_plot', action='store_true',
+                    help='Don\'t plot the result.')
 
 args = parser.parse_args()
 
@@ -41,8 +43,9 @@ z = np.sqrt((x - args.target[0])**2 + (y - args.target[1])**2)
 
 print('Maximum error:', np.amax(np.abs(z - data)))
 
-plt.pcolormesh(x, y, data, cmap='jet')
-plt.colorbar()
-plt.contour(x, y, data, levels=10, linestyles='dashed', colors='k')
-plt.axis('equal')
-plt.show()
+if not args.no_plot:
+    plt.pcolormesh(x, y, data, cmap='jet')
+    plt.colorbar()
+    plt.contour(x, y, data, levels=10, linestyles='dashed', colors='k')
+    plt.axis('equal')
+    plt.show()
