@@ -15,6 +15,8 @@ Dependencies
 ---
 
 * [h5cpp](https://github.com/ess-dmsc/h5cpp)
+* [ThreadPool](https://github.com/progschj/ThreadPool) (included in this
+  repository)
 
 Building
 ---
