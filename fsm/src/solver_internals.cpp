@@ -204,7 +204,6 @@ namespace fsm
             {
                 assert(soln != nullptr);
                 assert(worker_soln != nullptr);
-                assert(worker_soln->size() == fsm::parallel::n_workers);
 
                 auto diff = scalar_t{ 0 };
 
