@@ -11,6 +11,17 @@ _Lax-Friedrichs sweeping scheme for static Hamilton-Jacobi equations_ (available
 It is dimension-agnostic (the dimension is set at compile time) and uses the
 HDF5 format for data i/o.
 
+**NOTE**: This is a multi-threaded implementation, optimized to run on as many
+CPUs as the number of sweeping directions (4 for 2d problems, 8 for 3d
+problems).
+If you are running this on a single-processor system, an implementation
+optimized for serial execution is available by checking out the tag
+`legacy-serial`:
+```shell
+    $ git checkout legacy-serial
+```
+before building.
+
 Dependencies
 ---
 
