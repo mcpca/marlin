@@ -23,6 +23,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 // https://github.com/mcpca/fsm
 
+#if defined(NDEBUG)
+#    define FSM_DEBUG(x) ;
+#else
+#    define FSM_DEBUG(x) x
+#endif
+
 #include <algorithm>
 #include <iostream>
 #include <numeric>
@@ -113,18 +119,12 @@ namespace fsm
             std::cout << "Initialized. Solving (" << n_sweeps << " threads)..."
                       << std::endl;
 
-#ifndef NDEBUG
-            auto niter = 0;
-            std::cerr << "Iteration " << niter++ << ":\n";
-#endif
+            FSM_DEBUG(auto niter = 0;
+                      std::cerr << "Iteration " << niter++ << ":\n";)
 
             while(!iterate())
             {
-#ifndef NDEBUG
-                std::cerr << "Iteration " << niter++ << ":\n";
-#else
-                ;
-#endif
+                FSM_DEBUG(std::cerr << "Iteration " << niter++ << ":\n";)
             }
 
             std::cout << "Done. Writing to " << m_filename << "..."
@@ -134,16 +134,14 @@ namespace fsm
 
         void solver_t::initialize()
         {
-#ifndef NDEBUG
-            auto ntargetpts = 0;
-#endif
+            FSM_DEBUG(auto ntargetpts = 0;)
+
             for(index_t i = 0; i < m_cost->size(); ++i)
             {
                 if(m_cost->at(i) < scalar_t{ 0.0 })
                 {
-#ifndef NDEBUG
-                    ++ntargetpts;
-#endif
+                    FSM_DEBUG(++ntargetpts;)
+
                     m_soln->at(i) = -(m_cost->at(i) + scalar_t{ 1.0 });
 
                     for(unsigned j = 0; j < n_sweeps; ++j)
@@ -152,10 +150,9 @@ namespace fsm
                     }
                 }
             }
-#ifndef NDEBUG
-            std::cerr << "Found " << ntargetpts << " target grid points."
-                      << '\n';
-#endif
+
+            FSM_DEBUG(std::cerr << "Found " << ntargetpts
+                                << " target grid points." << '\n';)
         }
 
         bool solver_t::iterate()
@@ -215,9 +212,7 @@ namespace fsm
                 diff = std::max(diff, e.get());
             }
 
-#ifndef NDEBUG
-            std::cerr << "\t Delta = " << diff << '\n';
-#endif
+            FSM_DEBUG(std::cerr << "\t Delta = " << diff << '\n';)
 
             return diff < m_tolerance;
         }
