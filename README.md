@@ -77,6 +77,7 @@ For instance, to run the `eikonal2d` example:
   $ cd build
   $ make examples
   $ cd ../examples/scripts
+  $ mkdir ../data
   $ python3 eikonal2d.py
 ```
 
