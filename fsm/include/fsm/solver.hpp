@@ -97,6 +97,9 @@ namespace fsm
             void initialize();
             bool iterate();
 
+            void work(index_t sweep_dir);
+            scalar_t merge(index_t start, index_t end);
+
             std::string m_filename;
             hamiltonian_t m_hamiltonian;
             std::unique_ptr<grid::grid_t> m_grid;

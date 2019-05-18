@@ -38,7 +38,6 @@
 #include "grid.hpp"
 #include "io.hpp"
 #include "queue.hpp"
-#include "solver_internals.hpp"
 
 namespace fsm
 {
@@ -164,22 +163,12 @@ namespace fsm
             // The last sweep is done by the main thread.
             for(auto dir = 0; dir < n_sweeps - 1; ++dir)
             {
-                results.emplace_back(m_pool->enqueue(detail::work,
-                                                     dir,
-                                                     m_queue.get(),
-                                                     m_cost.get(),
-                                                     m_grid.get(),
-                                                     m_hamiltonian,
-                                                     m_viscosity));
+                results.emplace_back(
+                    m_pool->enqueue(&solver_t::work, this, dir));
             }
 
             // Done with scheduling, main thread does work itself.
-            detail::work(n_sweeps - 1,
-                         m_queue.get(),
-                         m_cost.get(),
-                         m_grid.get(),
-                         m_hamiltonian,
-                         m_viscosity);
+            work(n_sweeps - 1);
 
             for(auto&& r : results)
             {
@@ -195,17 +184,12 @@ namespace fsm
             {
                 auto const start = worker * points_per_worker;
 
-                merged.emplace_back(m_pool->enqueue(detail::merge,
-                                                    m_soln.get(),
-                                                    &m_worker,
-                                                    start,
-                                                    start + points_per_worker));
+                merged.emplace_back(m_pool->enqueue(
+                    &solver_t::merge, this, start, start + points_per_worker));
             }
 
-            auto diff = detail::merge(m_soln.get(),
-                                      &m_worker,
-                                      (n_sweeps - 1) * points_per_worker,
-                                      m_grid->npts());
+            auto diff =
+                merge((n_sweeps - 1) * points_per_worker, m_grid->npts());
 
             for(auto&& e : merged)
             {

@@ -23,8 +23,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 // https://github.com/mcpca/fsm
 
-#include "solver_internals.hpp"
 #include "data.hpp"
+#include "fsm/solver.hpp"
 #include "grid.hpp"
 #include "queue.hpp"
 
@@ -39,198 +39,183 @@ namespace fsm
 {
     namespace solver
     {
-        namespace detail
+        struct update_data_internal_t
         {
-            struct update_data_internal_t
+            vector_t p;
+            vector_t avgs;
+        };
+
+        inline update_data_internal_t estimate_p(point_t const& point,
+                                                 data::data_t const* soln,
+                                                 grid::grid_t const* grid)
+        {
+            assert(soln != nullptr);
+            assert(grid != nullptr);
+
+            update_data_internal_t res;
+
+            for(auto i = 0; i < dim; ++i)
             {
-                vector_t p;
-                vector_t avgs;
-            };
+                auto neighbor = point;
 
-            inline update_data_internal_t estimate_p(point_t const& point,
-                                                     data::data_t const* soln,
-                                                     grid::grid_t const* grid)
+                neighbor[i] += 1;
+                auto const right = soln->at(grid->index(neighbor));
+
+                neighbor[i] -= 2;
+                auto const left = soln->at(grid->index(neighbor));
+
+                res.p[i] = (right - left) / (scalar_t{ 2.0 } * grid->h(i));
+                res.avgs[i] = (right + left) / (scalar_t{ 2.0 } * grid->h(i));
+            }
+
+            return res;
+        }
+
+        inline scalar_t update(scalar_t ham_value,
+                               scalar_t scale,
+                               scalar_t cost,
+                               vector_t const& avgs,
+                               vector_t const& viscosity)
+        {
+            return scale * (cost - ham_value +
+                            std::inner_product(std::begin(viscosity),
+                                               std::end(viscosity),
+                                               std::begin(avgs),
+                                               0.0));
+        }
+
+        inline scalar_t scale(vector_t const& viscosity, vector_t const& h)
+        {
+            return scalar_t{ 1.0 } / std::inner_product(std::begin(viscosity),
+                                                        std::end(viscosity),
+                                                        std::begin(h),
+                                                        0.0,
+                                                        std::plus<>(),
+                                                        std::divides<>());
+        }
+
+        inline void sweep(
+            index_t dir,
+            data::data_t* soln,
+            data::data_t const* cost,
+            grid::grid_t const* grid,
+            hamiltonian_t const& hamiltonian,
+            std::function<vector_t(input_t const&)> const& viscosity)
+        {
+            for(auto const& i : grid::interior_visitor_t{ *grid, dir })
             {
-                assert(soln != nullptr);
-                assert(grid != nullptr);
-
-                update_data_internal_t res;
-
-                for(auto i = 0; i < dim; ++i)
+                if(cost->at(i) > scalar_t{ 0.0 })
                 {
-                    auto neighbor = point;
+                    auto const point = grid->point(i);
+                    auto const data = estimate_p(point, soln, grid);
+#ifdef FSM_USE_ROWMAJOR
+                    auto const sigma = viscosity(i);
+                    auto const scale_ = scale(sigma, grid->h());
 
-                    neighbor[i] += 1;
-                    auto const right = soln->at(grid->index(neighbor));
+                    soln->at(i) = std::min(update(hamiltonian(i, data.p),
+                                                  scale_,
+                                                  cost->at(i),
+                                                  data.avgs,
+                                                  sigma),
+                                           soln->at(i));
+#else
+                    auto const sigma = viscosity(point);
+                    auto const scale_ = scale(sigma, grid->h());
 
-                    neighbor[i] -= 2;
-                    auto const left = soln->at(grid->index(neighbor));
-
-                    res.p[i] = (right - left) / (scalar_t{ 2.0 } * grid->h(i));
-                    res.avgs[i] =
-                        (right + left) / (scalar_t{ 2.0 } * grid->h(i));
+                    soln->at(i) = std::min(update(hamiltonian(point, data.p),
+                                                  scale_,
+                                                  cost->at(i),
+                                                  data.avgs,
+                                                  sigma),
+                                           soln->at(i));
+#endif
                 }
-
-                return res;
             }
+        }
 
-            inline scalar_t update(scalar_t ham_value,
-                                   scalar_t scale,
-                                   scalar_t cost,
-                                   vector_t const& avgs,
-                                   vector_t const& viscosity)
-            {
-                return scale * (cost - ham_value +
-                                std::inner_product(std::begin(viscosity),
-                                                   std::end(viscosity),
-                                                   std::begin(avgs),
-                                                   0.0));
-            }
+        inline scalar_t update_boundary(index_t index,
+                                        index_t boundary,
+                                        data::data_t const* soln,
+                                        grid::grid_t const* grid)
+        {
+            auto neighbor = grid->point(index);
+            auto const boundary_dim =
+                boundary >= dim ? boundary - dim : boundary;
 
-            inline scalar_t scale(vector_t const& viscosity, vector_t const& h)
-            {
-                return scalar_t{ 1.0 } /
-                       std::inner_product(std::begin(viscosity),
-                                          std::end(viscosity),
-                                          std::begin(h),
-                                          0.0,
-                                          std::plus<>(),
-                                          std::divides<>());
-            }
+            // Approximate based on the two points in a line orthogonal
+            // to the boundary closest to the current point.
+            neighbor[boundary_dim] += boundary >= dim ? -1 : +1;
+            auto const outer = soln->at(grid->index(neighbor));
+            neighbor[boundary_dim] += boundary >= dim ? -1 : +1;
+            auto const inner = soln->at(grid->index(neighbor));
 
-            inline void sweep(
-                index_t dir,
-                data::data_t* soln,
-                data::data_t const* cost,
-                grid::grid_t const* grid,
-                hamiltonian_t const& hamiltonian,
-                std::function<vector_t(input_t const&)> const& viscosity)
+            return std::min(std::max(2 * outer - inner, inner),
+                            soln->at(index));
+        }
+
+        inline void enforce_boundary(data::data_t* soln,
+                                     data::data_t const* cost,
+                                     grid::grid_t const* grid)
+        {
+            for(index_t boundary = 0; boundary < n_boundaries; ++boundary)
             {
-                for(auto const& i : grid::interior_visitor_t{ *grid, dir })
+                for(auto const& i : grid::boundary_visitor_t{ *grid, boundary })
                 {
                     if(cost->at(i) > scalar_t{ 0.0 })
                     {
-                        auto const point = grid->point(i);
-                        auto const data = estimate_p(point, soln, grid);
-#ifdef FSM_USE_ROWMAJOR
-                        auto const sigma = viscosity(i);
-                        auto const scale_ = scale(sigma, grid->h());
-
-                        soln->at(i) = std::min(update(hamiltonian(i, data.p),
-                                                      scale_,
-                                                      cost->at(i),
-                                                      data.avgs,
-                                                      sigma),
-                                               soln->at(i));
-#else
-                        auto const sigma = viscosity(point);
-                        auto const scale_ = scale(sigma, grid->h());
-
                         soln->at(i) =
-                            std::min(update(hamiltonian(point, data.p),
-                                            scale_,
-                                            cost->at(i),
-                                            data.avgs,
-                                            sigma),
+                            std::min(update_boundary(i, boundary, soln, grid),
                                      soln->at(i));
-#endif
                     }
                 }
             }
+        }
 
-            inline scalar_t update_boundary(index_t index,
-                                            index_t boundary,
-                                            data::data_t const* soln,
-                                            grid::grid_t const* grid)
+        void solver_t::work(index_t sweep_dir)
+        {
+            assert(sweep_dir < n_sweeps);
+
+            auto soln = m_queue->deque();
+
+            sweep(sweep_dir,
+                  soln,
+                  m_cost.get(),
+                  m_grid.get(),
+                  m_hamiltonian,
+                  m_viscosity);
+
+            enforce_boundary(soln, m_cost.get(), m_grid.get());
+
+            m_queue->enqueue(soln);
+        }
+
+        scalar_t solver_t::merge(index_t start, index_t end)
+        {
+            auto diff = scalar_t{ 0 };
+
+            for(index_t i = start; i < end; ++i)
             {
-                auto neighbor = grid->point(index);
-                auto const boundary_dim =
-                    boundary >= dim ? boundary - dim : boundary;
+                auto const old = m_soln->at(i);
 
-                // Approximate based on the two points in a line orthogonal
-                // to the boundary closest to the current point.
-                neighbor[boundary_dim] += boundary >= dim ? -1 : +1;
-                auto const outer = soln->at(grid->index(neighbor));
-                neighbor[boundary_dim] += boundary >= dim ? -1 : +1;
-                auto const inner = soln->at(grid->index(neighbor));
+                m_soln->at(i) =
+                    std::min_element(std::begin(m_worker),
+                                     std::end(m_worker),
+                                     [&](auto const& a, auto const& b) {
+                                         return a->at(i) < b->at(i);
+                                     })
+                        ->get()
+                        ->at(i);
 
-                return std::min(std::max(2 * outer - inner, inner),
-                                soln->at(index));
-            }
-
-            inline void enforce_boundary(data::data_t* soln,
-                                         data::data_t const* cost,
-                                         grid::grid_t const* grid)
-            {
-                for(index_t boundary = 0; boundary < n_boundaries; ++boundary)
+                for(unsigned j = 0; j < m_worker.size(); ++j)
                 {
-                    for(auto const& i :
-                        grid::boundary_visitor_t{ *grid, boundary })
-                    {
-                        if(cost->at(i) > scalar_t{ 0.0 })
-                        {
-                            soln->at(i) = std::min(
-                                update_boundary(i, boundary, soln, grid),
-                                soln->at(i));
-                        }
-                    }
-                }
-            }
-
-            void work(index_t sweep_dir,
-                      queue::queue_t* queue,
-                      data::data_t const* cost,
-                      grid::grid_t const* grid,
-                      hamiltonian_t const& hamiltonian,
-                      std::function<vector_t(input_t const&)> const& viscosity)
-            {
-                assert(sweep_dir < n_sweeps);
-                assert(cost != nullptr);
-                assert(grid != nullptr);
-
-                auto soln = queue->deque();
-
-                sweep(sweep_dir, soln, cost, grid, hamiltonian, viscosity);
-                enforce_boundary(soln, cost, grid);
-
-                queue->enqueue(soln);
-            }
-
-            scalar_t merge(data::data_t* soln,
-                           std::array<std::unique_ptr<data::data_t>, n_sweeps>*
-                               worker_soln,
-                           index_t start,
-                           index_t end)
-            {
-                assert(soln != nullptr);
-                assert(worker_soln != nullptr);
-
-                auto diff = scalar_t{ 0 };
-
-                for(index_t i = start; i < end; ++i)
-                {
-                    auto const old = soln->at(i);
-
-                    soln->at(i) =
-                        std::min_element(std::begin(*worker_soln),
-                                         std::end(*worker_soln),
-                                         [&](auto const& a, auto const& b) {
-                                             return a->at(i) < b->at(i);
-                                         })
-                            ->get()
-                            ->at(i);
-
-                    for(unsigned j = 0; j < worker_soln->size(); ++j)
-                    {
-                        (*worker_soln)[j]->at(i) = soln->at(i);
-                    }
-
-                    diff = std::max(diff, old - soln->at(i));
+                    m_worker[j]->at(i) = m_soln->at(i);
                 }
 
-                return diff;
+                diff = std::max(diff, old - m_soln->at(i));
             }
 
-        }    // namespace detail
-    }        // namespace solver
+            return diff;
+        }
+
+    }    // namespace solver
 }    // namespace fsm
