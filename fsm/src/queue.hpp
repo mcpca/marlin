@@ -35,7 +35,7 @@ namespace fsm {
                 queue_t() = default;
 
                 data::data_t* deque();
-                void enqueue(data::data_t* const& elem);
+                void enqueue(data::data_t* elem);
 
             private:
                 std::queue<data::data_t*> m_queue;

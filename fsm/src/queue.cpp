@@ -27,21 +27,23 @@
 
 using lock_t = std::lock_guard<std::mutex>;
 
-namespace fsm {
-    namespace queue {
+namespace fsm
+{
+    namespace queue
+    {
         data::data_t* queue_t::deque()
         {
             lock_t _(m_mutex);
-            auto* p = m_queue.back();
+            auto p = m_queue.front();
             m_queue.pop();
 
             return p;
         }
 
-        void queue_t::enqueue(data::data_t* const& elem)
+        void queue_t::enqueue(data::data_t* elem)
         {
             lock_t _(m_mutex);
             m_queue.push(elem);
         }
-    }
-}
+    }    // namespace queue
+}    // namespace fsm
