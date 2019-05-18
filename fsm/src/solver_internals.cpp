@@ -206,9 +206,9 @@ namespace fsm
                         ->get()
                         ->at(i);
 
-                for(unsigned j = 0; j < m_worker.size(); ++j)
+                for(auto&& worker : m_worker)
                 {
-                    m_worker[j]->at(i) = m_soln->at(i);
+                    worker->at(i) = m_soln->at(i);
                 }
 
                 diff = std::max(diff, old - m_soln->at(i));
