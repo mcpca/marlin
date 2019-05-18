@@ -37,7 +37,6 @@
 #include "fsm/solver.hpp"
 #include "grid.hpp"
 #include "io.hpp"
-#include "queue.hpp"
 
 namespace fsm
 {
@@ -100,14 +99,12 @@ namespace fsm
               m_cost(std::make_unique<data::data_t>(std::move(cost))),
               m_viscosity(viscosity),
               m_tolerance(params.tolerance),
-              m_pool(std::make_unique<ThreadPool>(n_sweeps - 1)),
-              m_queue(std::make_unique<queue::queue_t>())
+              m_pool(std::make_unique<ThreadPool>(n_sweeps - 1))
         {
             for(auto i = 0; i < n_sweeps; ++i)
             {
                 m_worker[i] = std::make_unique<data::data_t>(m_grid->npts(),
                                                              params.maxval);
-                m_queue->enqueue(m_worker[i].get());
             }
         }
 

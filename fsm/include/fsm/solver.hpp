@@ -46,10 +46,6 @@ namespace fsm
     {
         class data_t;
     }
-    namespace queue
-    {
-        class queue_t;
-    }
 
     namespace solver
     {
@@ -112,7 +108,6 @@ namespace fsm
             scalar_t m_tolerance;
 
             std::unique_ptr<ThreadPool> m_pool;
-            std::unique_ptr<queue::queue_t> m_queue;
         };
     }    // namespace solver
 }    // namespace fsm

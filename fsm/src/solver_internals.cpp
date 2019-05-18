@@ -26,7 +26,6 @@
 #include "data.hpp"
 #include "fsm/solver.hpp"
 #include "grid.hpp"
-#include "queue.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -175,18 +174,14 @@ namespace fsm
         {
             assert(sweep_dir < n_sweeps);
 
-            auto soln = m_queue->deque();
-
             sweep(sweep_dir,
-                  soln,
+                  m_worker[sweep_dir].get(),
                   m_cost.get(),
                   m_grid.get(),
                   m_hamiltonian,
                   m_viscosity);
 
-            enforce_boundary(soln, m_cost.get(), m_grid.get());
-
-            m_queue->enqueue(soln);
+            enforce_boundary(m_worker[sweep_dir].get(), m_cost.get(), m_grid.get());
         }
 
         scalar_t solver_t::merge(index_t start, index_t end)

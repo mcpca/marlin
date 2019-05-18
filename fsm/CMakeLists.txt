@@ -7,8 +7,7 @@ add_library(fsm
             src/solver_internals.cpp
             src/grid.cpp
             src/data.cpp
-            src/io.cpp
-            src/queue.cpp)
+            src/io.cpp)
 
 target_compile_features(fsm PUBLIC cxx_std_14)
 
