@@ -193,7 +193,7 @@ namespace fsm
         {
             auto diff = scalar_t{ 0 };
 
-            for(index_t i = start; i < end; ++i)
+            for(auto i = start; i < end; ++i)
             {
                 auto const old = m_soln->at(i);
 

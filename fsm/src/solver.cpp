@@ -103,7 +103,7 @@ namespace fsm
               m_pool(std::make_unique<ThreadPool>(n_sweeps - 1)),
               m_queue(std::make_unique<queue::queue_t>())
         {
-            for(unsigned i = 0; i < n_sweeps; ++i)
+            for(auto i = 0; i < n_sweeps; ++i)
             {
                 m_worker[i] = std::make_unique<data::data_t>(m_grid->npts(),
                                                              params.maxval);
@@ -143,7 +143,7 @@ namespace fsm
 
                     m_soln->at(i) = -(m_cost->at(i) + scalar_t{ 1.0 });
 
-                    for(unsigned j = 0; j < n_sweeps; ++j)
+                    for(auto j = 0; j < n_sweeps; ++j)
                     {
                         m_worker[j]->at(i) = m_soln->at(i);
                     }
@@ -180,7 +180,7 @@ namespace fsm
 
             auto const points_per_worker = m_grid->npts() / n_sweeps;
 
-            for(unsigned worker = 0; worker < n_sweeps - 1; ++worker)
+            for(auto worker = 0; worker < n_sweeps - 1; ++worker)
             {
                 auto const start = worker * points_per_worker;
 
