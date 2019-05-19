@@ -99,20 +99,14 @@ namespace fsm
               m_cost(std::make_unique<data::data_t>(std::move(cost))),
               m_viscosity(viscosity),
               m_tolerance(params.tolerance),
-              m_pool(std::make_unique<ThreadPool>(n_sweeps - 1))
-        {
-            for(auto i = 0; i < n_sweeps; ++i)
-            {
-                m_worker[i] = std::make_unique<data::data_t>(m_grid->npts(),
-                                                             params.maxval);
-            }
-        }
+              m_pool(std::make_unique<ThreadPool>(n_workers - 1))
+        {}
 
         void solver_t::solve()
         {
             std::cout << "Initializing problem instance..." << std::endl;
             initialize();
-            std::cout << "Initialized. Solving (" << n_sweeps << " threads)..."
+            std::cout << "Initialized. Solving (" << n_workers << " threads)..."
                       << std::endl;
 
             FSM_DEBUG(auto niter = 0;
@@ -139,11 +133,6 @@ namespace fsm
                     FSM_DEBUG(++ntargetpts;)
 
                     m_soln->at(i) = -(m_cost->at(i) + scalar_t{ 1.0 });
-
-                    for(auto j = 0; j < n_sweeps; ++j)
-                    {
-                        m_worker[j]->at(i) = m_soln->at(i);
-                    }
                 }
             }
 
@@ -153,44 +142,12 @@ namespace fsm
 
         bool solver_t::iterate()
         {
-            std::vector<std::future<void>> results;
-            results.reserve(n_sweeps - 1);
+            scalar_t diff = 0;
 
-            // Schedule a sweep in each worker.
-            // The last sweep is done by the main thread.
-            for(auto dir = 0; dir < n_sweeps - 1; ++dir)
+            for(auto dir = 0; dir < n_sweeps; ++dir)
             {
-                results.emplace_back(
-                    m_pool->enqueue(&solver_t::work, this, dir));
-            }
-
-            // Done with scheduling, main thread does work itself.
-            work(n_sweeps - 1);
-
-            for(auto&& r : results)
-            {
-                r.get();
-            }
-
-            std::vector<std::future<scalar_t>> merged;
-            merged.reserve(n_sweeps - 1);
-
-            auto const points_per_worker = m_grid->npts() / n_sweeps;
-
-            for(auto worker = 0; worker < n_sweeps - 1; ++worker)
-            {
-                auto const start = worker * points_per_worker;
-
-                merged.emplace_back(m_pool->enqueue(
-                    &solver_t::merge, this, start, start + points_per_worker));
-            }
-
-            auto diff =
-                merge((n_sweeps - 1) * points_per_worker, m_grid->npts());
-
-            for(auto&& e : merged)
-            {
-                diff = std::max(diff, e.get());
+                diff = std::max(diff, sweep(dir));
+                diff = std::max(diff, boundary());
             }
 
             FSM_DEBUG(std::cerr << "\t Delta = " << diff << '\n';)

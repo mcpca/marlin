@@ -51,7 +51,10 @@ namespace fsm
                   }
 
                   return h;
-              }())
+              }()),
+              m_nlevels(
+                  std::accumulate(std::begin(m_size), std::end(m_size), 0ul) -
+                  dim + 1)
         {
             assert([this] {
                 for(auto i = 0; i < dim; ++i)
@@ -123,6 +126,34 @@ namespace fsm
             assert(dimension < dim);
 
             return static_cast<bool>(dir & (1 << dimension));
+        }
+
+        point_t grid_t::rotate_axes(point_t point, int dir) const
+        {
+            for(int i = 0; i < dim; ++i)
+            {
+                if(backwards(dir, i))
+                {
+                    point[i] = m_size[i] - point[i] - 1;
+                }
+            }
+
+            return point;
+        }
+
+        index_t grid_t::n_levels() const { return m_nlevels; }
+
+        bool grid_t::is_boundary(point_t const& point) const
+        {
+            for(auto i = 0; i < dim; ++i)
+            {
+                if(point[i] == 0 || point[i] == m_size[i] - 1)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         index_t grid_t::next(index_t idx, index_t dir) const
@@ -237,102 +268,5 @@ namespace fsm
             return idx;
         }
 
-        interior_visitor_t::interior_visitor_t(grid_t const& grid, index_t dir)
-            : m_gridpoint(&grid, dir)
-        {}
-
-        interior_visitor_t::gridpoint_t::gridpoint_t(grid_t const* grid,
-                                                     index_t dir)
-            : m_index(), m_grid(grid), m_dir(dir)
-        {}
-
-        interior_visitor_t::gridpoint_t::gridpoint_t(index_t dir, index_t index)
-            : m_index(index), m_grid(nullptr), m_dir(dir)
-        {}
-
-        interior_visitor_t::gridpoint_t& interior_visitor_t::gridpoint_t::
-        operator++()
-        {
-            m_index = m_grid->next(m_index, m_dir);
-            return *this;
-        }
-
-        index_t interior_visitor_t::gridpoint_t::operator*() const
-        {
-            return m_index;
-        }
-
-        interior_visitor_t::gridpoint_t const& interior_visitor_t::begin()
-        {
-            m_gridpoint.m_index = m_gridpoint.m_grid->npts();
-            return ++m_gridpoint;
-        }
-
-        interior_visitor_t::gridpoint_t interior_visitor_t::end()
-        {
-            return gridpoint_t{ m_gridpoint.m_dir, m_gridpoint.m_grid->npts() };
-        }
-
-        bool operator==(interior_visitor_t::gridpoint_t const& a,
-                        interior_visitor_t::gridpoint_t const& b)
-        {
-            return (a.m_index == b.m_index) && (a.m_dir == b.m_dir);
-        }
-
-        bool operator!=(interior_visitor_t::gridpoint_t const& a,
-                        interior_visitor_t::gridpoint_t const& b)
-        {
-            return (a.m_index != b.m_index) || (a.m_dir != b.m_dir);
-        }
-
-        boundary_visitor_t::boundary_visitor_t(grid_t const& grid, index_t dir)
-            : m_gridpoint(&grid, dir)
-        {}
-
-        boundary_visitor_t::gridpoint_t::gridpoint_t(grid_t const* grid,
-                                                     index_t boundary)
-            : m_index(), m_grid(grid), m_boundary(boundary)
-        {}
-
-        boundary_visitor_t::gridpoint_t::gridpoint_t(index_t boundary,
-                                                     index_t index)
-            : m_index(index), m_grid(nullptr), m_boundary(boundary)
-        {}
-
-        boundary_visitor_t::gridpoint_t& boundary_visitor_t::gridpoint_t::
-        operator++()
-        {
-            m_index = m_grid->next_in_boundary(m_index, m_boundary);
-            return *this;
-        }
-
-        index_t boundary_visitor_t::gridpoint_t::operator*() const
-        {
-            return m_index;
-        }
-
-        boundary_visitor_t::gridpoint_t const& boundary_visitor_t::begin()
-        {
-            m_gridpoint.m_index = m_gridpoint.m_grid->npts();
-            return ++m_gridpoint;
-        }
-
-        boundary_visitor_t::gridpoint_t boundary_visitor_t::end()
-        {
-            return gridpoint_t{ m_gridpoint.m_boundary,
-                                m_gridpoint.m_grid->npts() };
-        }
-
-        bool operator==(boundary_visitor_t::gridpoint_t const& a,
-                        boundary_visitor_t::gridpoint_t const& b)
-        {
-            return (a.m_index == b.m_index) && (a.m_boundary == b.m_boundary);
-        }
-
-        bool operator!=(boundary_visitor_t::gridpoint_t const& a,
-                        boundary_visitor_t::gridpoint_t const& b)
-        {
-            return (a.m_index != b.m_index) || (a.m_boundary != b.m_boundary);
-        }
     }    // namespace grid
 }    // namespace fsm

@@ -92,14 +92,18 @@ namespace fsm
             void initialize();
             bool iterate();
 
-            void work(index_t sweep_dir);
-            scalar_t merge(index_t start, index_t end);
+            scalar_t sweep(int dir);
+            scalar_t boundary();
+
+            scalar_t update_points(
+                std::array<point_t, points_per_worker> points,
+                int dir,
+                int n);
 
             std::string m_filename;
             hamiltonian_t m_hamiltonian;
             std::unique_ptr<grid::grid_t> m_grid;
             std::unique_ptr<data::data_t> m_soln;
-            std::array<std::unique_ptr<data::data_t>, n_sweeps> m_worker;
             std::unique_ptr<data::data_t> m_cost;
 
             //! Numerical parameters.

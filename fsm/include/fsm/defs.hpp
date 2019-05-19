@@ -27,24 +27,41 @@
 
 #include <array>
 #include <functional>
+#include <type_traits>
 
 #ifndef FSM_N_DIMS
-#    define FSM_N_DIMS 2
+#    define FSM_N_DIMS 3
+#endif
+
+#ifndef FSM_N_WORKERS
+#    include <thread>
 #endif
 
 namespace fsm
 {
     constexpr auto dim = FSM_N_DIMS;
-
+    static_assert(std::is_integral<decltype(dim)>::value,
+                  "Number of dimensions must be a positive integer.");
     static_assert(dim > 1, "The number of dimensions must be at least two.");
 
     constexpr auto n_sweeps = 1 << dim;
     constexpr auto n_boundaries = 2 * dim;
 
+#ifndef FSM_N_WORKERS
+    static int const n_workers = std::thread::hardware_concurrency();
+#else
+    constexpr auto n_workers = FSM_N_WORKERS;
+    static_assert(std::is_integral<decltype(n_workers)>,
+                  "Number of workers must be a positive integer.");
+    static_assert(n_workers > 1, "The number of workers must be at least two.");
+#endif
+
+    constexpr auto points_per_worker = 128;
+
     using index_t = size_t;
     using point_t = std::array<index_t, dim>;
 
-    using scalar_t = float;
+    using scalar_t = double;
     using vector_t = std::array<scalar_t, dim>;
 
 #ifdef FSM_USE_ROWMAJOR

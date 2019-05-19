@@ -55,12 +55,17 @@ namespace fsm
             index_t npts() const;
             scalar_t h(index_t i) const;
             vector_t const& h() const;
+            index_t n_levels() const;
 
             //! Convert from a row major offset to a list of indices.
             point_t point(index_t index) const;
 
             //! Convert from a list of indices to a row major offset.
             index_t index(point_t const& point) const;
+
+            point_t rotate_axes(point_t point, int dir) const;
+
+            bool is_boundary(point_t const& point) const;
 
             //! Get next point in the sweep.
             index_t next(index_t idx, index_t dir) const;
@@ -75,66 +80,8 @@ namespace fsm
             index_t m_npts;
             //! Diameters of the nodes.
             vector_t m_h;
+            //! Number of levels.
+            index_t m_nlevels;
         };
-
-        class interior_visitor_t
-        {
-          public:
-            struct gridpoint_t
-            {
-                gridpoint_t(grid_t const* grid, index_t dir);
-                gridpoint_t(index_t dir, index_t index);
-
-                gridpoint_t& operator++();
-                index_t operator*() const;
-
-                index_t m_index;
-                grid_t const* m_grid;
-                index_t m_dir;
-            };
-
-            interior_visitor_t(grid_t const& grid, index_t dir);
-
-            gridpoint_t const& begin();
-            gridpoint_t end();
-
-          private:
-            gridpoint_t m_gridpoint;
-        };
-
-        bool operator==(interior_visitor_t::gridpoint_t const& a,
-                        interior_visitor_t::gridpoint_t const& b);
-        bool operator!=(interior_visitor_t::gridpoint_t const& a,
-                        interior_visitor_t::gridpoint_t const& b);
-
-        class boundary_visitor_t
-        {
-          public:
-            struct gridpoint_t
-            {
-                gridpoint_t(grid_t const* grid, index_t boundary);
-                gridpoint_t(index_t boundary, index_t index);
-
-                gridpoint_t& operator++();
-                index_t operator*() const;
-
-                index_t m_index;
-                grid_t const* m_grid;
-                index_t m_boundary;
-            };
-
-            boundary_visitor_t(grid_t const& grid, index_t boundary);
-
-            gridpoint_t const& begin();
-            gridpoint_t end();
-
-          private:
-            gridpoint_t m_gridpoint;
-        };
-
-        bool operator==(interior_visitor_t::gridpoint_t const& a,
-                        interior_visitor_t::gridpoint_t const& b);
-        bool operator!=(boundary_visitor_t::gridpoint_t const& a,
-                        boundary_visitor_t::gridpoint_t const& b);
     }    // namespace grid
 }    // namespace fsm
