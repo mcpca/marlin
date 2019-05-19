@@ -102,7 +102,7 @@ namespace fsm
 
           private:
             //! Number of gridpoints.
-            index_t const m_memsize;
+            index_t m_memsize;
             //! Array holding the value at each gridpoint.
             std::unique_ptr<scalar_t[]> m_values;
         };
