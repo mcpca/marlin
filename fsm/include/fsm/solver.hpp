@@ -27,7 +27,6 @@
 
 #include <array>
 #include <functional>
-#include <future>
 #include <memory>
 #include <string>
 #include <vector>
