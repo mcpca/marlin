@@ -15,10 +15,9 @@ HDF5 format for data i/o.
 CPUs as the number of sweeping directions (4 for 2d problems, 8 for 3d
 problems).
 If you are running this on a single-processor system, an implementation
-optimized for serial execution is available by checking out the tag
-`legacy-serial`:
+optimized for serial execution is available by checking out the `serial` branch:
 ```shell
-    $ git checkout legacy-serial
+    $ git checkout serial
 ```
 before building.
 
