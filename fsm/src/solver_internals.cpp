@@ -98,7 +98,10 @@ namespace fsm
             hamiltonian_t const& hamiltonian,
             std::function<vector_t(input_t const&)> const& viscosity)
         {
-            for(auto const& i : grid::interior_visitor_t{ *grid, dir })
+            auto const size = grid->npts();
+
+            for(auto i = grid->next(size, dir); i != size;
+                i = grid->next(i, dir))
             {
                 if(cost->at(i) > scalar_t{ 0.0 })
                 {
@@ -153,9 +156,12 @@ namespace fsm
                                      data::data_t const* cost,
                                      grid::grid_t const* grid)
         {
+            auto const size = grid->npts();
+
             for(index_t boundary = 0; boundary < n_boundaries; ++boundary)
             {
-                for(auto const& i : grid::boundary_visitor_t{ *grid, boundary })
+                for(auto i = grid->next_in_boundary(size, boundary); i != size;
+                    i = grid->next_in_boundary(i, boundary))
                 {
                     if(cost->at(i) > scalar_t{ 0.0 })
                     {
@@ -178,7 +184,8 @@ namespace fsm
                   m_hamiltonian,
                   m_viscosity);
 
-            enforce_boundary(m_worker[sweep_dir].get(), m_cost.get(), m_grid.get());
+            enforce_boundary(
+                m_worker[sweep_dir].get(), m_cost.get(), m_grid.get());
         }
 
         scalar_t solver_t::merge(index_t start, index_t end)
