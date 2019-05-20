@@ -51,7 +51,7 @@ namespace fsm
     static int const n_workers = std::thread::hardware_concurrency();
 #else
     constexpr auto n_workers = FSM_N_WORKERS;
-    static_assert(std::is_integral<decltype(n_workers)>,
+    static_assert(std::is_integral<decltype(n_workers)::value>,
                   "Number of workers must be a positive integer.");
     static_assert(n_workers > 1, "The number of workers must be at least two.");
 #endif
