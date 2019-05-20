@@ -142,17 +142,24 @@ namespace fsm
 
         bool solver_t::iterate()
         {
-            scalar_t diff = 0;
-
             for(auto dir = 0; dir < n_sweeps; ++dir)
             {
-                diff = std::max(diff, sweep(dir));
+                scalar_t diff = 0;
+
+                diff = sweep(dir);
+                FSM_DEBUG(std::cerr << "Sweep " << dir << ": delta = " << diff
+                                    << '\n';)
                 diff = std::max(diff, boundary());
+                FSM_DEBUG(std::cerr << "Sweep " << dir
+                                    << " (after boundary): delta = " << diff
+                                    << '\n';)
+                if(diff < m_tolerance)
+                {
+                    return true;
+                }
             }
 
-            FSM_DEBUG(std::cerr << "\t Delta = " << diff << '\n';)
-
-            return diff < m_tolerance;
+            return false;
         }
     }    // namespace solver
 }    // namespace fsm
