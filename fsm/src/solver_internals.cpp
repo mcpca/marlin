@@ -109,34 +109,34 @@ namespace fsm
 
                 auto const data =
                     estimate_p(points[j], m_soln.get(), m_grid.get());
-                auto const i = m_grid->index(points[j]);
+                auto const index = m_grid->index(points[j]);
+                auto const old = m_soln->at(index);
 
 #ifdef FSM_USE_ROWMAJOR
-                auto const sigma = viscosity(i);
+                auto const sigma = m_viscosity(index);
                 auto const scale_ = scale(sigma, grid->h());
 
-                soln->at(i) = std::min(update(hamiltonian(i, data.p),
-                                              scale_,
-                                              cost->at(i),
-                                              data.avgs,
-                                              sigma),
-                                       soln->at(i));
+                m_soln->at(index) =
+                    std::min(update(m_hamiltonian(index, data.p),
+                                    scale_,
+                                    m_cost->at(index),
+                                    data.avgs,
+                                    sigma),
+                             old);
 #else
                 auto const sigma = m_viscosity(points[j]);
                 auto const scale_ = scale(sigma, m_grid->h());
 
-                auto old = m_soln->at(i);
-
-                m_soln->at(i) =
+                m_soln->at(index) =
                     std::min(update(m_hamiltonian(points[j], data.p),
                                     scale_,
-                                    m_cost->at(i),
+                                    m_cost->at(index),
                                     data.avgs,
                                     sigma),
                              old);
 #endif
 
-                diff = std::max(diff, old - m_soln->at(i));
+                diff = std::max(diff, old - m_soln->at(index));
             }
 
             return diff;
