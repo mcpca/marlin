@@ -96,6 +96,8 @@ namespace fsm
             int dir,
             int n)
         {
+            assert(n <= points_per_worker);
+
             scalar_t diff = 0;
 
             for(auto j = 0; j < n; ++j)
@@ -160,12 +162,16 @@ namespace fsm
 
                 do
                 {
+                    points[npoints] = level.get();
+                    ++npoints;
+
                     if(npoints == points_per_worker)
                     {
                         npoints = 0;
 
-                        if(worker++ < n_workers - 1)
+                        if(worker < n_workers - 1)
                         {
+                            worker++;
                             results.emplace_back(
                                 m_pool->enqueue(&solver_t::update_points,
                                                 this,
@@ -182,13 +188,11 @@ namespace fsm
                         }
                     }
 
-                    points[npoints] = level.get();
-                    ++npoints;
                 } while(level.next());
 
                 if(npoints != points_per_worker)
                 {
-                    if(worker++ < n_workers - 1)
+                    if(worker < n_workers - 1)
                     {
                         results.emplace_back(
                             m_pool->enqueue(&solver_t::update_points,
@@ -199,7 +203,6 @@ namespace fsm
                     }
                     else
                     {
-                        worker = 0;
                         diff =
                             std::max(diff, update_points(points, dir, npoints));
                     }
@@ -214,7 +217,7 @@ namespace fsm
             }
 
             return diff;
-        }    // namespace solver
+        }
 
         inline scalar_t update_boundary(index_t index,
                                         index_t boundary,
