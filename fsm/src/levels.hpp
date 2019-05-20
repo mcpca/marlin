@@ -102,6 +102,8 @@ namespace fsm
             ++m_sum;
 
             m_range[0] = m_sum;
+            m_range[1] = 0;
+            m_range[2] = 0;
 
             if(m_sum >= m_limits[0])
             {
