@@ -114,7 +114,7 @@ namespace fsm
 
 #ifdef FSM_USE_ROWMAJOR
                 auto const sigma = m_viscosity(index);
-                auto const scale_ = scale(sigma, grid->h());
+                auto const scale_ = scale(sigma, m_grid->h());
 
                 m_soln->at(index) =
                     std::min(update(m_hamiltonian(index, data.p),
