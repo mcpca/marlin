@@ -108,10 +108,15 @@ namespace fsm
                 }
 
                 points[j] = m_grid->rotate_axes(points[j], dir);
+                auto const index = m_grid->index(points[j]);
+
+                if(m_cost->at(index) < 0)
+                {
+                    continue;
+                }
 
                 auto const data =
                     estimate_p(points[j], m_soln.get(), m_grid.get());
-                auto const index = m_grid->index(points[j]);
                 auto const old = m_soln->at(index);
 
 #ifdef FSM_USE_ROWMAJOR
