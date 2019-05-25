@@ -26,7 +26,6 @@
 #include "data.hpp"
 #include "fsm/solver.hpp"
 #include "grid.hpp"
-#include "levels.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -91,32 +90,33 @@ namespace fsm
                                                         std::divides<>());
         }
 
-        scalar_t solver_t::update_points(
-            std::array<point_t, points_per_worker> points,
-            int dir,
-            int n)
+        scalar_t solver_t::update_points(std::vector<point_t> const* points,
+                                         int dir,
+                                         int start,
+                                         int end)
         {
-            assert(n <= points_per_worker);
+            assert(points != nullptr);
+            assert(dir >= 0);
+            assert(dir < n_sweeps);
+            assert(start >= 0);
+            assert(start < static_cast<int>(points->size()));
+            assert(end >= 0);
+            assert(end < static_cast<int>(points->size()));
+            assert(start <= end);
 
             scalar_t diff = 0;
 
-            for(auto j = 0; j < n; ++j)
+            for(auto j = start; j < end; ++j)
             {
-                if(m_grid->is_boundary(points[j]))
+                auto point = m_grid->rotate_axes((*points)[j], dir);
+                auto const index = m_grid->index(point);
+
+                if(m_cost->at(index) < 0.0)
                 {
                     continue;
                 }
 
-                points[j] = m_grid->rotate_axes(points[j], dir);
-                auto const index = m_grid->index(points[j]);
-
-                if(m_cost->at(index) < 0)
-                {
-                    continue;
-                }
-
-                auto const data =
-                    estimate_p(points[j], m_soln.get(), m_grid.get());
+                auto const data = estimate_p(point, m_soln.get(), m_grid.get());
                 auto const old = m_soln->at(index);
 
 #ifdef FSM_USE_ROWMAJOR
@@ -131,11 +131,11 @@ namespace fsm
                                     sigma),
                              old);
 #else
-                auto const sigma = m_viscosity(points[j]);
+                auto const sigma = m_viscosity(point);
                 auto const scale_ = scale(sigma, m_grid->h());
 
                 m_soln->at(index) =
-                    std::min(update(m_hamiltonian(points[j], data.p),
+                    std::min(update(m_hamiltonian(point, data.p),
                                     scale_,
                                     m_cost->at(index),
                                     data.avgs,
@@ -151,69 +151,32 @@ namespace fsm
 
         scalar_t solver_t::sweep(int dir)
         {
+            assert(dir >= 0);
+            assert(dir < n_sweeps);
+
             scalar_t diff = 0;
-            auto const size = m_grid->n_levels();
-            auto level = level::level_t(0, m_grid->size());
 
-            std::array<point_t, points_per_worker> points;
-
-            for(index_t lvl = 0; lvl < size; ++lvl)
+            for(auto const& level : m_levels)
             {
                 std::vector<std::future<scalar_t>> results;
-                results.reserve(m_grid->npts());
 
-                int worker = 0;
-                int npoints = 0;
+                auto block_size = level.size() / n_workers;
+                auto start = 0;
 
-                do
+                for(auto i = 0; i < n_workers - 1; ++i)
                 {
-                    points[npoints] = level.get();
-                    ++npoints;
-
-                    if(npoints == points_per_worker)
-                    {
-                        npoints = 0;
-
-                        if(worker < n_workers - 1)
-                        {
-                            worker++;
-                            results.emplace_back(
-                                m_pool->enqueue(&solver_t::update_points,
-                                                this,
-                                                points,
-                                                dir,
-                                                points_per_worker));
-                        }
-                        else
-                        {
-                            worker = 0;
-                            diff = std::max(
-                                diff,
-                                update_points(points, dir, points_per_worker));
-                        }
-                    }
-
-                } while(level.next());
-
-                if(npoints != points_per_worker)
-                {
-                    if(worker < n_workers - 1)
-                    {
-                        results.emplace_back(
-                            m_pool->enqueue(&solver_t::update_points,
-                                            this,
-                                            points,
-                                            dir,
-                                            npoints));
-                    }
-                    else
-                    {
-                        diff =
-                            std::max(diff, update_points(points, dir, npoints));
-                    }
+                    results.emplace_back(
+                        m_pool->enqueue(&solver_t::update_points,
+                                        this,
+                                        &level,
+                                        dir,
+                                        start,
+                                        start + block_size));
+                    start += block_size;
                 }
 
-                level.next_level();
+                // Update remaining points
+                update_points(&level, dir, start, level.size());
 
                 for(auto& r : results)
                 {

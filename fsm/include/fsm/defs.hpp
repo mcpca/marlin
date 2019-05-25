@@ -56,8 +56,6 @@ namespace fsm
     static_assert(n_workers > 1, "The number of workers must be at least two.");
 #endif
 
-    constexpr auto points_per_worker = 128;
-
     using index_t = size_t;
     using point_t = std::array<index_t, dim>;
 

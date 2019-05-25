@@ -96,15 +96,18 @@ namespace fsm
             scalar_t boundary();
 
             scalar_t update_points(
-                std::array<point_t, points_per_worker> points,
+                std::vector<point_t> const* points,
                 int dir,
-                int n);
+                int start,
+                int end);
 
             std::string m_filename;
             hamiltonian_t m_hamiltonian;
             std::unique_ptr<grid::grid_t> m_grid;
             std::unique_ptr<data::data_t> m_soln;
             std::unique_ptr<data::data_t> m_cost;
+
+            std::vector<std::vector<point_t>> m_levels;
 
             //! Numerical parameters.
             std::function<vector_t(input_t const&)> m_viscosity;

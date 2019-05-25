@@ -33,10 +33,12 @@
 #include <iostream>
 #include <numeric>
 
-#include "data.hpp"
 #include "fsm/solver.hpp"
+
+#include "data.hpp"
 #include "grid.hpp"
 #include "io.hpp"
+#include "levels.hpp"
 
 namespace fsm
 {
@@ -100,7 +102,29 @@ namespace fsm
               m_viscosity(viscosity),
               m_tolerance(params.tolerance),
               m_pool(std::make_unique<ThreadPool>(n_workers - 1))
-        {}
+        {
+            for(index_t i = 0; i < m_grid->n_levels(); ++i)
+            {
+                level::level_t level(i, m_grid->size());
+
+                std::vector<point_t> points;
+
+                do
+                {
+                    auto point = level.get();
+
+                    if(!m_grid->is_boundary(point))
+                    {
+                        points.push_back(point);
+                    }
+                } while(level.next());
+
+                if(!points.empty())
+                {
+                    m_levels.emplace_back(std::move(points));
+                }
+            }
+        }
 
         void solver_t::solve()
         {
