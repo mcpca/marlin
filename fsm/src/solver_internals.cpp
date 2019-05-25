@@ -73,6 +73,7 @@ namespace fsm
                                vector_t const& avgs,
                                vector_t const& viscosity)
         {
+            assert(cost > 0);
             return scale * (cost - ham_value +
                             std::inner_product(std::begin(viscosity),
                                                std::end(viscosity),
@@ -101,7 +102,7 @@ namespace fsm
             assert(start >= 0);
             assert(start < static_cast<int>(points->size()));
             assert(end >= 0);
-            assert(end < static_cast<int>(points->size()));
+            assert(end <= static_cast<int>(points->size()));
             assert(start <= end);
 
             scalar_t diff = 0;
@@ -192,6 +193,11 @@ namespace fsm
                                         data::data_t const* soln,
                                         grid::grid_t const* grid)
         {
+            assert(boundary < n_boundaries);
+            assert(soln != nullptr);
+            assert(grid != nullptr);
+            assert(index < grid->npts());
+
             auto neighbor = grid->point(index);
             auto const boundary_dim =
                 boundary >= dim ? boundary - dim : boundary;
