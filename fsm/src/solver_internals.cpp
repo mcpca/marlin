@@ -177,7 +177,8 @@ namespace fsm
                 }
 
                 // Update remaining points
-                update_points(&level, dir, start, level.size());
+                diff = std::max(
+                    diff, update_points(&level, dir, start, level.size()));
 
                 for(auto& r : results)
                 {
