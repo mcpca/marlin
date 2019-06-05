@@ -160,6 +160,7 @@ namespace fsm
             for(auto const& level : m_levels)
             {
                 std::vector<std::future<scalar_t>> results;
+                results.reserve(n_workers - 1);
 
                 auto block_size = level.size() / n_workers;
                 auto start = 0;
