@@ -25,99 +25,131 @@
 
 #pragma once
 
+#include <cassert>
 #include "fsm/defs.hpp"
 
-#include <numeric>
+#ifndef NDEBUG
+#    include <numeric>
+#endif
 
 namespace fsm
 {
     namespace level
     {
+        template<index_t N>
         class level_t
         {
-          public:
-            level_t(int sum, point_t const& limits);
+            static_assert(N <= fsm::dim, "");
+            friend class level_t<N + 1>;
 
-            point_t const& get() const;
-            void next_level();
+          public:
+            level_t(index_t sum, point_t const& limits);
+
+            //! Get the indices of the current point.
+            void get(index_t* range) const;
+            //! Generate next point.
             bool next();
 
           private:
-            point_t m_range{ 0, 0, 0 };
-            point_t m_limits;
-            unsigned m_sum;
+            //! Set the total sum to a new value.
+            bool reset(index_t sum);
+            index_t sum();
+
+            //! Upper limit for this element.
+            index_t m_limit;
+            //! Current value of this element.
+            index_t m_value;
+            //! Next element.
+            level_t<N - 1> m_sublevel;
         };
 
-        level_t::level_t(int sum, point_t const& limits)
-            : m_limits(limits), m_sum(sum)
+        template<>
+        class level_t<1>
         {
-            m_range[0] = m_sum;
+            friend class level_t<2>;
 
-            if(m_sum >= m_limits[0])
-            {
-                m_range[0] = m_limits[0] - 1;
-                m_range[1] = m_sum - m_limits[0] + 1;
-            }
+          public:
+            level_t(index_t sum, point_t const& limits);
 
-            if(m_range[1] >= m_limits[1])
-            {
-                m_range[2] = m_range[1] - m_limits[1] + 1;
-                m_range[1] = m_limits[1] - 1;
-            }
+            void get(index_t* range) const;
+            bool next() const;
+
+          private:
+            bool reset(index_t sum);
+            index_t sum();
+
+            index_t m_value;
+            index_t m_limit;
+        };
+
+        template<index_t N>
+        level_t<N>::level_t(index_t sum, point_t const& limits)
+            : m_limit(limits[dim - N]),
+              m_value(std::min(sum, m_limit - 1)),
+              m_sublevel(sum > m_value ? sum - m_value : 0, limits)
+        {
+            assert(std::accumulate(
+                       std::begin(limits) + dim - N, std::end(limits), 0) -
+                       N >=
+                   sum);
         }
 
-        bool level_t::next()
+        level_t<1>::level_t(index_t sum, point_t const& limits)
+            : m_value(sum), m_limit(limits.back())
         {
-            if((m_range[1] == 0) || (m_range[2] == m_limits[2] - 1))
-            {
-                if((m_range[0] == 0) || m_range[1] == m_limits[1] - 1)
-                {
-                    return false;
-                }
+            assert(m_value < m_limit);
+        }
 
-                m_range[0]--;
-                m_range[1] = m_sum - m_range[0];
+        template<index_t N>
+        void level_t<N>::get(index_t* range) const
+        {
+            assert(range != nullptr);
 
-                if(m_range[1] >= m_limits[1])
-                {
-                    m_range[2] = m_range[1] - m_limits[1] + 1;
-                    m_range[1] = m_limits[1] - 1;
-                }
-                else
-                {
-                    m_range[2] = 0;
-                }
+            *range = m_value;
+            m_sublevel.get(range + 1);
+        }
 
+        void level_t<1>::get(index_t* range) const
+        {
+            assert(range != nullptr);
+            *range = m_value;
+        }
+
+        template<index_t N>
+        bool level_t<N>::next()
+        {
+            if(m_sublevel.next())
                 return true;
-            }
 
-            m_range[1]--;
-            m_range[2]++;
+            if(m_value == 0)
+                return false;
 
-            return true;
+            m_value--;
+            return m_sublevel.reset(m_sublevel.sum() + 1);
         }
 
-        void level_t::next_level()
+        bool level_t<1>::next() const { return false; }
+
+        template<index_t N>
+        bool level_t<N>::reset(index_t sum)
         {
-            ++m_sum;
-
-            m_range[0] = m_sum;
-            m_range[1] = 0;
-            m_range[2] = 0;
-
-            if(m_sum >= m_limits[0])
-            {
-                m_range[0] = m_limits[0] - 1;
-                m_range[1] = m_sum - m_limits[0] + 1;
-            }
-
-            if(m_range[1] >= m_limits[1])
-            {
-                m_range[2] = m_range[1] - m_limits[1] + 1;
-                m_range[1] = m_limits[1] - 1;
-            }
+            m_value = std::min(sum, m_limit - 1);
+            return m_sublevel.reset(sum > m_value ? sum - m_value : 0);
         }
 
-        point_t const& level_t::get() const { return m_range; }
+        bool level_t<1>::reset(index_t sum)
+        {
+            m_value = sum;
+            return m_value < m_limit;
+        }
+
+        template<index_t N>
+        index_t level_t<N>::sum()
+        {
+            return m_value + m_sublevel.sum();
+        }
+
+        index_t level_t<1>::sum() { return m_value; }
+
     }    // namespace level
 }    // namespace fsm

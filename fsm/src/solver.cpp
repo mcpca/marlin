@@ -23,7 +23,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // https://github.com/mcpca/fsm
 
-#if defined(NDEBUG)
+#if defined(NDEGUB) and not defined(PRINT_DEBUG_MSGS)
 #    define FSM_DEBUG(x) ;
 #else
 #    define FSM_DEBUG(x) x
@@ -105,13 +105,14 @@ namespace fsm
         {
             for(index_t i = 0; i < m_grid->n_levels(); ++i)
             {
-                level::level_t level(i, m_grid->size());
+                level::level_t<dim> level(i, m_grid->size());
 
                 std::vector<point_t> points;
 
                 do
                 {
-                    auto point = level.get();
+                    point_t point;
+                    level.get(point.data());
 
                     if(!m_grid->is_boundary(point))
                     {
