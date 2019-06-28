@@ -6,14 +6,15 @@ static Hamilton-Jacobi equations.
 
 The implementation is based on the algorithm described in Kao, Osher and Qian,
 _Lax-Friedrichs sweeping scheme for static Hamilton-Jacobi equations_ (available
-[here](https://www.sciencedirect.com/science/article/pii/S0021999103006016)).
+[here](https://doi.org/10.1016/j.jcp.2003.11.007)),
+and is parallelized using the hyperplane stepping method described in Detrixhe,
+Gibou and Min, _A parallel fast sweeping method for the Eikonal
+equation_ ([link](https://doi.org/10.1016/j.jcp.2012.11.042)).
 
 It is dimension-agnostic (the dimension is set at compile time) and uses the
 HDF5 format for data i/o.
 
-**NOTE**: This is a multi-threaded implementation, optimized to run on as many
-CPUs as the number of sweeping directions (4 for 2d problems, 8 for 3d
-problems).
+**NOTE**:
 If you are running this on a single-processor system, an implementation
 optimized for serial execution is available by checking out the `serial` branch:
 ```shell
@@ -25,8 +26,8 @@ Dependencies
 ---
 
 * [h5cpp](https://github.com/ess-dmsc/h5cpp)
-* [ThreadPool](https://github.com/progschj/ThreadPool) (included in this
-  repository)
+* [ThreadPool](https://github.com/progschj/ThreadPool) (header-only, included in
+  the repository)
 
 Building
 ---
