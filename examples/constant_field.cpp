@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <iostream>
 #include <numeric>
+
 #include "fsm/solver.hpp"
 
 #include "timer.hpp"
@@ -22,16 +23,16 @@ int main(int argc, char** argv)
         sscanf(argv[2], "%f", v + 1);
     }
 
-    auto h = [&v](auto x, auto&& p) -> double {
+    auto h = [&v](auto x, auto&& p) -> fsm::scalar_t {
         return std::sqrt(std::inner_product(
                    std::begin(p), std::end(p), std::begin(p), 0.0)) -
                p[0] * v[0] - p[1] * v[1];
     };
 
     auto viscosity = [&v](auto const& x) {
-        return fsm::vector_t{ static_cast<fsm::scalar_t>(1.0 + std::fabs(v[0])),
+        return fsm::vector_t{ static_cast<fsm::scalar_t>(1.0 + std::abs(v[0])),
                               static_cast<fsm::scalar_t>(1.0 +
-                                                         std::fabs(v[1])) };
+                                                         std::abs(v[1])) };
     };
 
     fsm::solver::params_t params;

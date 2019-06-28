@@ -1,6 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <numeric>
+
 #include "fsm/solver.hpp"
 
 #include "timer.hpp"
@@ -8,7 +9,7 @@
 int main()
 {
 #if FSM_N_DIMS == 3
-    auto h = [](auto x, auto&& p) -> double {
+    auto h = [](auto x, auto&& p) -> fsm::scalar_t {
         // Norm of p
         return std::sqrt(
             std::inner_product(std::begin(p), std::end(p), std::begin(p), 0.0));

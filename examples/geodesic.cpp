@@ -1,6 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <numeric>
+
 #include "fsm/solver.hpp"
 
 #include "timer.hpp"
@@ -8,14 +9,12 @@
 int main()
 {
 #if FSM_N_DIMS == 2
-    std::array<std::pair<fsm::scalar_t, fsm::scalar_t>, fsm::dim> vertices = {
-        { { -0.5, 0.5 }, { -0.5, 0.5 } }
-    };
+    constexpr std::array<std::pair<fsm::scalar_t, fsm::scalar_t>, fsm::dim>
+        vertices = { { { -0.5, 0.5 }, { -0.5, 0.5 } } };
 
-    std::array<int, fsm::dim> npts = { { 201, 201 } };
+    constexpr std::array<int, fsm::dim> npts = { { 201, 201 } };
 
-    auto pt = [&vertices, &npts ](auto x) -> auto
-    {
+    auto pt = [&vertices, &npts](auto x) {
         std::array<fsm::scalar_t, fsm::dim> pt;
         for(auto i = 0ul; i < fsm::dim; ++i)
         {
