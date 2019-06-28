@@ -33,8 +33,6 @@ namespace fsm
 {
     namespace grid
     {
-        static_assert(dim > 1, "Number of dimensions must be greater than one");
-
         struct grid_t
         {
           public:

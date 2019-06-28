@@ -55,9 +55,6 @@ namespace fsm
             scalar_t tolerance;
         };
 
-        static_assert(dim > 1,
-                      "Number of dimensions must be greater than zero");
-
         class solver_t
         {
           public:
