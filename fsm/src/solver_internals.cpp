@@ -35,15 +35,19 @@ namespace fsm
 {
     namespace solver
     {
-        struct update_data_internal_t
+        namespace
         {
-            vector_t p;
-            vector_t avgs;
-        };
+            struct update_data_internal_t
+            {
+                vector_t p;
+                vector_t avgs;
+            };
+        }    // namespace
 
-        inline update_data_internal_t estimate_p(point_t const& point,
-                                                 data::data_t const* soln,
-                                                 grid::grid_t const* grid)
+        static inline update_data_internal_t estimate_p(
+            point_t const& point,
+            data::data_t const* soln,
+            grid::grid_t const* grid)
         {
             assert(soln != nullptr);
             assert(grid != nullptr);
@@ -67,11 +71,11 @@ namespace fsm
             return res;
         }
 
-        inline scalar_t update(scalar_t ham_value,
-                               scalar_t scale,
-                               scalar_t cost,
-                               vector_t const& avgs,
-                               vector_t const& viscosity)
+        static inline scalar_t update(scalar_t ham_value,
+                                      scalar_t scale,
+                                      scalar_t cost,
+                                      vector_t const& avgs,
+                                      vector_t const& viscosity)
         {
             assert(cost > 0);
             return scale * (cost - ham_value +
@@ -81,7 +85,8 @@ namespace fsm
                                                0.0));
         }
 
-        inline scalar_t scale(vector_t const& viscosity, vector_t const& h)
+        static inline scalar_t scale(vector_t const& viscosity,
+                                     vector_t const& h)
         {
             return scalar_t{ 1.0 } / std::inner_product(std::begin(viscosity),
                                                         std::end(viscosity),
@@ -190,10 +195,10 @@ namespace fsm
             return diff;
         }
 
-        inline scalar_t update_boundary(index_t index,
-                                        index_t boundary,
-                                        data::data_t const* soln,
-                                        grid::grid_t const* grid)
+        static inline scalar_t update_boundary(index_t index,
+                                               index_t boundary,
+                                               data::data_t const* soln,
+                                               grid::grid_t const* grid)
         {
             assert(boundary < n_boundaries);
             assert(soln != nullptr);
