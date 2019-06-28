@@ -44,7 +44,7 @@ namespace fsm
     using index_t = size_t;
     using point_t = std::array<index_t, dim>;
 
-    using scalar_t = float;
+    using scalar_t = double;
     using vector_t = std::array<scalar_t, dim>;
 
 #ifdef FSM_USE_ROWMAJOR
