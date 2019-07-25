@@ -53,7 +53,10 @@ namespace fsm
 #ifndef FSM_N_WORKERS
     //! Number of threads.
     //! If the number of threads is not given, try hardware_concurrency.
-    static int const n_workers = std::thread::hardware_concurrency();
+    static int const n_workers = [] {
+        int const hc = std::thread::hardware_concurrency();
+        return hc > 0 ? hc : 2;
+    }();
 #else
     constexpr auto n_workers = FSM_N_WORKERS;
     static_assert(std::is_integral<decltype(n_workers)>::value,
