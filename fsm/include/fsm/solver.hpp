@@ -48,19 +48,34 @@ namespace fsm
 
     namespace solver
     {
-        //! Numerical parameters supplied by the user.
+        //! @brief Numerical parameters supplied by the user.
         struct params_t
         {
+            //! Maximum value of the solution over the whole domain.
             scalar_t maxval;
+            //! Tolerance parameter for the convergence criterion.
             scalar_t tolerance;
         };
 
-        static_assert(dim > 1,
-                      "Number of dimensions must be greater than zero");
-
+        //! @brief Solver API.
+        //
+        //! The main class, used for defining a problem, solving it and writing
+        //! the solution to disk.
         class solver_t
         {
           public:
+            //! Contructs a solver_t object given an HDF5 file and the problem
+            //! data.
+            //! Construction is delegated to the move constructor by calling a
+            //! factory function, which makes it easier to read the data in the
+            //! HDF5 file before constructing the solver_t object.
+            //
+            //! @param filename Path to a HDF5 containing the cost function.
+            //! @param hamiltonian Callable for evaluating the Hamiltonian.
+            //! @param vertices The limits of the grid.
+            //! @param viscosity Callable for evaluating the viscosity
+            //!                  coefficients.
+            //! @param params Numerical parameters.
             solver_t(
                 std::string const& filename,
                 hamiltonian_t const& hamiltonian,
@@ -68,13 +83,22 @@ namespace fsm
                 std::function<vector_t(input_t const&)> const& viscosity,
                 params_t const& params);
 
+            //! Compiler-generated move contructor.
             solver_t(solver_t&&) noexcept;
+            //! Compiler-generated move assignment.
             solver_t& operator=(solver_t&&) noexcept;
+            //! Compiler-generated destructor.
             ~solver_t();
 
+            //! Initializes and solves the problem instance, and writes the
+            //! solution to disk.
             void solve();
 
           private:
+            //! @brief Factory function.
+            //
+            //! Reads and processes the necessary data from the hdf5 file before
+            //! calling a private constructor.
             friend solver_t make_solver(
                 std::string const& filename,
                 hamiltonian_t const& hamiltonian,
@@ -82,6 +106,8 @@ namespace fsm
                 std::function<vector_t(input_t const&)> const& viscosity,
                 params_t const& params);
 
+            // Constructs a solver_t object after the relevant info has been
+            // read from the HDF5 file.
             solver_t(std::string const& filename,
                      hamiltonian_t const& hamiltonian,
                      data::data_t cost,
@@ -89,24 +115,43 @@ namespace fsm
                      std::function<vector_t(input_t const&)> const& viscosity,
                      params_t const& params);
 
+            // Initialize the solution.
             void initialize();
+            // Main loop.
             bool iterate();
 
-            void work(index_t sweep_dir);
-            scalar_t merge(index_t start, index_t end);
+            // Sweeps all gridpoints in the direction dir.
+            scalar_t sweep(int dir);
+            // Updates the boundary points.
+            scalar_t boundary();
 
+            // Updates a group of points.
+            scalar_t update_points(std::vector<point_t> const* points,
+                                   int dir,
+                                   int start,
+                                   int end);
+
+            // Path to a HDF5 file containing the cost function.
             std::string m_filename;
+            // Callable for evaluating the Hamiltonian.
             hamiltonian_t m_hamiltonian;
-            std::unique_ptr<grid::grid_t> m_grid;
-            std::unique_ptr<data::data_t> m_soln;
-            std::array<std::unique_ptr<data::data_t>, n_sweeps> m_worker;
-            std::unique_ptr<data::data_t> m_cost;
 
-            //! Numerical parameters.
+            // Privately implemented members.
+            std::unique_ptr<grid::grid_t> m_grid;    // Grid.
+            std::unique_ptr<data::data_t> m_soln;    // Solution.
+            std::unique_ptr<data::data_t> m_cost;    // Cost function.
+
+            // Callable for evalutating the viscosity coefficients.
             std::function<vector_t(input_t const&)> m_viscosity;
+            // Tolerance for the convergence criterion.
             scalar_t m_tolerance;
 
+            // Thread pool.
             std::unique_ptr<ThreadPool> m_pool;
+
+            // Caches the sets of points which can be updated in parallel in
+            // each sweep.
+            std::vector<std::vector<point_t>> m_levels;
         };
     }    // namespace solver
 }    // namespace fsm

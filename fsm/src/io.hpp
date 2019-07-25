@@ -30,43 +30,44 @@
 
 namespace fsm
 {
-    //! Data input/output
+    //! @brief Functions for data input/output with hdf5 files.
     namespace io
     {
+        //! @brief Holds a dataset and its size along each dimension.
         struct solver_data_t
         {
             data::data_t data;
             point_t size;
         };
 
-        //! Read a dataset from a hdf5 file.
-        //! @tparam dim number of spatial dimensions
-        //! @tparam scalar_t element type of the container which will hold the
-        //! data
-        //! @param[in] filename path to the hdf5 file containing the data
-        //! @param[in] dsetname name of the hdf5 dataset containing the data
-        //! @param[in, out] size records the size along each dimension of the
-        //! data
-        //! @return gds::Function holding the data
+        //! @brief Read a dataset from a hdf5 file.
+        //
+        //! @param filename path to the file.
+        //! @param dsetname path to the dataset in the file.
+        //! @return the data and its dimensions.
         solver_data_t read(std::string const& filename,
                            std::string const& dsetname);
 
-        //! Write a dataset to a hdf5 file.
-        //! @tparam dim number of spatial dimensions
-        //! @tparam scalar_t element type of the container holding the data
-        //! @param[in] filename path to the hdf5 file to which the data will be
-        //! written
-        //! @param[in] dsetname name of the hdf5 dataset to which the data will
-        //! be written
-        //! @param[in] data gds::Function containing the data
+        //! @brief Write data to a hdf5 file.
+        //
+        //! Creates a new dataset and writes to it.
+        //
+        //! @param filename path to the file.
+        //! @param dsetname path of the dataset to be created.
+        //! @param data the data to be written.
+        //! @param size the dimensions of the data.
         void write(std::string const& filename,
                    std::string const& dsetname,
                    data::data_t const& data,
                    point_t const& size);
 
+        //! @brief Check whether a dataset exists in a hdf5 file.
+        //
+        //! @param filename path to the file.
+        //! @param dsetname path to the dataset being queried.
+        //! @return true if the dataset exists.
         bool dset_exists(std::string const& filename,
                          std::string const& dsetname);
 
     }    // namespace io
 }    // namespace fsm
-

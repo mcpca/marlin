@@ -23,7 +23,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // https://github.com/mcpca/fsm
 
-#if defined(NDEBUG)
+#if defined(NDEGUB) and not defined(PRINT_DEBUG_MSGS)
 #    define FSM_DEBUG(x) ;
 #else
 #    define FSM_DEBUG(x) x
@@ -33,10 +33,12 @@
 #include <iostream>
 #include <numeric>
 
-#include "data.hpp"
 #include "fsm/solver.hpp"
+
+#include "data.hpp"
 #include "grid.hpp"
 #include "io.hpp"
+#include "levels.hpp"
 
 namespace fsm
 {
@@ -99,12 +101,29 @@ namespace fsm
               m_cost(std::make_unique<data::data_t>(std::move(cost))),
               m_viscosity(viscosity),
               m_tolerance(params.tolerance),
-              m_pool(std::make_unique<ThreadPool>(n_sweeps - 1))
+              m_pool(std::make_unique<ThreadPool>(n_workers - 1))
         {
-            for(auto i = 0; i < n_sweeps; ++i)
+            for(index_t i = 0; i < m_grid->n_levels(); ++i)
             {
-                m_worker[i] = std::make_unique<data::data_t>(m_grid->npts(),
-                                                             params.maxval);
+                level::level_t<dim> level(i, m_grid->size());
+
+                std::vector<point_t> points;
+
+                do
+                {
+                    point_t point;
+                    level.get(point.data());
+
+                    if(!m_grid->is_boundary(point))
+                    {
+                        points.push_back(point);
+                    }
+                } while(level.next());
+
+                if(!points.empty())
+                {
+                    m_levels.emplace_back(std::move(points));
+                }
             }
         }
 
@@ -112,7 +131,7 @@ namespace fsm
         {
             std::cout << "Initializing problem instance..." << std::endl;
             initialize();
-            std::cout << "Initialized. Solving (" << n_sweeps << " threads)..."
+            std::cout << "Initialized. Solving (" << n_workers << " threads)..."
                       << std::endl;
 
             FSM_DEBUG(auto niter = 0;
@@ -139,11 +158,6 @@ namespace fsm
                     FSM_DEBUG(++ntargetpts;)
 
                     m_soln->at(i) = -(m_cost->at(i) + scalar_t{ 1.0 });
-
-                    for(auto j = 0; j < n_sweeps; ++j)
-                    {
-                        m_worker[j]->at(i) = m_soln->at(i);
-                    }
                 }
             }
 
@@ -153,49 +167,24 @@ namespace fsm
 
         bool solver_t::iterate()
         {
-            std::vector<std::future<void>> results;
-            results.reserve(n_sweeps - 1);
-
-            // Schedule a sweep in each worker.
-            // The last sweep is done by the main thread.
-            for(auto dir = 0; dir < n_sweeps - 1; ++dir)
+            for(auto dir = 0; dir < n_sweeps; ++dir)
             {
-                results.emplace_back(
-                    m_pool->enqueue(&solver_t::work, this, dir));
+                scalar_t diff = 0;
+
+                diff = sweep(dir);
+                FSM_DEBUG(std::cerr << "Sweep " << dir << ": delta = " << diff
+                                    << '\n';)
+                diff = std::max(diff, boundary());
+                FSM_DEBUG(std::cerr << "Sweep " << dir
+                                    << " (after boundary): delta = " << diff
+                                    << '\n';)
+                if(diff < m_tolerance)
+                {
+                    return true;
+                }
             }
 
-            // Done with scheduling, main thread does work itself.
-            work(n_sweeps - 1);
-
-            for(auto&& r : results)
-            {
-                r.get();
-            }
-
-            std::vector<std::future<scalar_t>> merged;
-            merged.reserve(n_sweeps - 1);
-
-            auto const points_per_worker = m_grid->npts() / n_sweeps;
-
-            for(auto worker = 0; worker < n_sweeps - 1; ++worker)
-            {
-                auto const start = worker * points_per_worker;
-
-                merged.emplace_back(m_pool->enqueue(
-                    &solver_t::merge, this, start, start + points_per_worker));
-            }
-
-            auto diff =
-                merge((n_sweeps - 1) * points_per_worker, m_grid->npts());
-
-            for(auto&& e : merged)
-            {
-                diff = std::max(diff, e.get());
-            }
-
-            FSM_DEBUG(std::cerr << "\t Delta = " << diff << '\n';)
-
-            return diff < m_tolerance;
+            return false;
         }
     }    // namespace solver
 }    // namespace fsm

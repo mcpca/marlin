@@ -51,7 +51,10 @@ namespace fsm
                   }
 
                   return h;
-              }())
+              }()),
+              m_nlevels(
+                  std::accumulate(std::begin(m_size), std::end(m_size), 0ul) -
+                  dim + 1)
         {
             assert([this] {
                 for(auto i = 0; i < dim; ++i)
@@ -123,6 +126,34 @@ namespace fsm
             assert(dimension < dim);
 
             return static_cast<bool>(dir & (1 << dimension));
+        }
+
+        point_t grid_t::rotate_axes(point_t point, int dir) const
+        {
+            for(int i = 0; i < dim; ++i)
+            {
+                if(backwards(dir, i))
+                {
+                    point[i] = m_size[i] - point[i] - 1;
+                }
+            }
+
+            return point;
+        }
+
+        index_t grid_t::n_levels() const { return m_nlevels; }
+
+        bool grid_t::is_boundary(point_t const& point) const
+        {
+            for(auto i = 0; i < dim; ++i)
+            {
+                if(point[i] == 0 || point[i] == m_size[i] - 1)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         index_t grid_t::next(index_t idx, index_t dir) const
