@@ -33,85 +33,86 @@
 
 namespace fsm
 {
+    //! @brief Functions and types related to \c data_t.
     namespace data
     {
-        //! A simple wrapper around a unique_ptr holding a dynamic array.
-        //! @tparam scalar_t type of the array elements
+        //! @brief Range of scalar values.
+        //
+        //! Holds a heap-allocated array and its size.
         class data_t
         {
           public:
-            //! Take over the data from an existing unique_ptr holding an array.
-            //! Make sure that the allocated size of the array is at least
-            //! memsize.
-            //! @param[in] memsize size of the array
-            //! @param[in] values unique_ptr to be moved from
+            //! @brief Construct from preexisting data.
+            //
+            //! @param memsize number of datapoints.
+            //! @param values unique_ptr holding the data.
             data_t(index_t memsize, std::unique_ptr<scalar_t[]> values);
 
-            //! Creates a new unique_ptr and fills it with a given value.
-            //! @param[in] memsize size of the array
-            //! @param[in] fill value to fill the array with
+            //! @brief Allocate new array.
+            //
+            //! @param memsize number of datapoints.
+            //! @param fill value the new array will be filled with.
             explicit data_t(index_t memsize, scalar_t fill = scalar_t{ 0 });
 
-            // Disable copying
+            // Disable copying.
             data_t(data_t const&) = delete;
             data_t& operator=(data_t const&) = delete;
 
+            //! @brief Compiler-generated move constructor.
             data_t(data_t&&) noexcept = default;
+            //! @brief Compiler-generated move assignment.
             data_t& operator=(data_t&&) noexcept = default;
 
+            //! @brief Compiler-generated destructor.
             ~data_t() = default;
 
             //! Iterator type.
             using iterator_t = scalar_t*;
-
             //! Constant iterator type.
             using const_iterator_t = scalar_t const*;
 
-            //! Read value at an index.
-            //! No bounds checking is performed.
-            //! @param[in] index index of the value to be read in the array
-            //! @return the value held by the array at the given index
+            //! @brief Read value at an index.
+            //
+            //! Bounds checking is only performed in debug mode.
+            //
+            //! @param index index of the value to be read.
             scalar_t at(index_t index) const
             {
                 assert(index < m_memsize);
                 return m_values[index];
             }
 
-            //! Get reference to value at a gridpoint.
-            //! No bounds checking is performed.
-            //! @param[in] index index of the value to be read in the array
-            //! @return reference to the corresponding position of the array
+            //! @brief Get reference to value at an index.
+            //
+            //! Bounds checking is only performed in debug mode.
+            //
+            //! @param index index of the value to be read or written to.
             scalar_t& at(index_t index)
             {
                 assert(index < m_memsize);
                 return m_values[index];
             }
 
-            //! Get pointer to the first position of the array (read only)
-            //! @return pointer to the first position of the array
+            //! @brief Get raw pointer to first datapoint.
             scalar_t* get_values() const;
 
-            //! @return size of the underlying array
+            //! @brief Size of the underlying array.
             index_t size() const;
 
-            //! @return iterator to the beggining of the array
+            //! @brief Iterator to the beggining of the data.
             iterator_t begin();
-
-            //! @return iterator to the beggining of the array
+            //! @brief Constant iterator to the beggining of the data.
             const_iterator_t begin() const;
 
-            //! @return iterator to the element following the last element in
-            //! the array
+            //! @brief Iterator to the end of the data.
             iterator_t end();
-
-            //! @return iterator to the element following the last element in
-            //! the array
+            //! @brief Constant iterator to the end of the data.
             const_iterator_t end() const;
 
           private:
-            //! Number of gridpoints.
+            // Size of the underlying array.
             index_t m_memsize;
-            //! Array holding the value at each gridpoint.
+            // Pointer to the beggining of the data.
             std::unique_ptr<scalar_t[]> m_values;
         };
     }    // namespace data

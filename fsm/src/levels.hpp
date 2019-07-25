@@ -34,8 +34,13 @@
 
 namespace fsm
 {
+    //! @brief Functions and types related to \c level_t.
     namespace level
     {
+        //! @brief Generates the 'level' sets.
+        //
+        //! A 'level' is a set of gridpoints which can be updated in parallel
+        //! (see Detrixhe et al. 2013).
         template<index_t N>
         class level_t
         {
@@ -43,26 +48,36 @@ namespace fsm
             friend class level_t<N + 1>;
 
           public:
+            //! @brief Constructor.
+            //
+            //! @param sum sum of the coordinate indices of the the gridpoints
+            //! in the set
+            //! @param limits grid size along each dimension.
             level_t(index_t sum, point_t const& limits);
 
-            //! Get the indices of the current point.
+            //! @brief Get the indices of the current point.
+            //
+            //! @param range pointer to the first element of a range with N
+            //! elements
             void get(index_t* range) const;
-            //! Generate next point.
+
+            //! @brief Generate next point.
             bool next();
 
           private:
-            //! Set the total sum to a new value.
+            //! @brief Set the total sum to a new value.
             bool reset(index_t sum);
             index_t sum();
 
-            //! Upper limit for this element.
+            //! @brief Upper limit for this element.
             index_t m_limit;
-            //! Current value of this element.
+            //! @brief Current value of this element.
             index_t m_value;
-            //! Next element.
+            //! @brief Next element.
             level_t<N - 1> m_sublevel;
         };
 
+        //! Class specialization for one dimension.
         template<>
         class level_t<1>
         {
