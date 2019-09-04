@@ -21,14 +21,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-// https://github.com/mcpca/fsm
+// https://github.com/mcpca/marlin
 
 #pragma once
 
 #include "data.hpp"
-#include "fsm/defs.hpp"
+#include "marlin/defs.hpp"
 
-namespace fsm
+namespace marlin
 {
     //! @brief Functions for data input/output with hdf5 files.
     namespace io
@@ -70,4 +70,4 @@ namespace fsm
                          std::string const& dsetname);
 
     }    // namespace io
-}    // namespace fsm
+}    // namespace marlin

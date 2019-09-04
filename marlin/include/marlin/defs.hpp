@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-// https://github.com/mcpca/fsm
+// https://github.com/mcpca/marlin
 
 #pragma once
 
@@ -37,7 +37,7 @@
 #    include <thread>
 #endif
 
-namespace fsm
+namespace marlin
 {
     //! Number of dimensions.
     constexpr auto dim = FSM_N_DIMS;
@@ -85,4 +85,4 @@ namespace fsm
     //! Hamiltonian.
     using hamiltonian_t = std::function<double(input_t, vector_t)>;
 
-}    // namespace fsm
+}    // namespace marlin

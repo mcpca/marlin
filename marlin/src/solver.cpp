@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-// https://github.com/mcpca/fsm
+// https://github.com/mcpca/marlin
 
 #if defined(NDEGUB) and not defined(PRINT_DEBUG_MSGS)
 #    define FSM_DEBUG(x) ;
@@ -33,14 +33,14 @@
 #include <iostream>
 #include <numeric>
 
-#include "fsm/solver.hpp"
+#include "marlin/solver.hpp"
 
 #include "data.hpp"
 #include "grid.hpp"
 #include "io.hpp"
 #include "levels.hpp"
 
-namespace fsm
+namespace marlin
 {
     namespace solver
     {
@@ -187,4 +187,4 @@ namespace fsm
             return false;
         }
     }    // namespace solver
-}    // namespace fsm
+}    // namespace marlin

@@ -21,15 +21,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-// https://github.com/mcpca/fsm
+// https://github.com/mcpca/marlin
 
 #pragma once
 
 #include <array>
 
-#include "fsm/defs.hpp"
+#include "marlin/defs.hpp"
 
-namespace fsm
+namespace marlin
 {
     //! @brief Functions and types related to \c grid_t.
     namespace grid
@@ -143,4 +143,4 @@ namespace fsm
             index_t m_nlevels;
         };
     }    // namespace grid
-}    // namespace fsm
+}    // namespace marlin

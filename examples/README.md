@@ -26,7 +26,7 @@ adjustable resolution.
 Since the analytical solution to this equation is known, the maximum error among
 all gridpoints is printed after the solver is called.
 
-Remember to compile the library with `fsm::dim` set to `3` in `defs.hpp` before
+Remember to compile the library with `marlin::dim` set to `3` in `defs.hpp` before
 running this example.
 
 **NOTE**: This example is meant to illustrate the library's capability to solve

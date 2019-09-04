@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-// https://github.com/mcpca/fsm
+// https://github.com/mcpca/marlin
 
 #include <algorithm>
 #include <cassert>
@@ -29,7 +29,7 @@
 
 #include "grid.hpp"
 
-namespace fsm
+namespace marlin
 {
     namespace grid
     {
@@ -269,4 +269,4 @@ namespace fsm
         }
 
     }    // namespace grid
-}    // namespace fsm
+}    // namespace marlin

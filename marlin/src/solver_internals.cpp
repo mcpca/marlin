@@ -21,17 +21,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-// https://github.com/mcpca/fsm
+// https://github.com/mcpca/marlin
 
 #include "data.hpp"
-#include "fsm/solver.hpp"
 #include "grid.hpp"
+#include "marlin/solver.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <numeric>
 
-namespace fsm
+namespace marlin
 {
     namespace solver
     {
@@ -244,4 +244,4 @@ namespace fsm
             return diff;
         }
     }    // namespace solver
-}    // namespace fsm
+}    // namespace marlin

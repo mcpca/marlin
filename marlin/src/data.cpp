@@ -21,11 +21,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-// https://github.com/mcpca/fsm
+// https://github.com/mcpca/marlin
 
 #include "data.hpp"
 
-namespace fsm
+namespace marlin
 {
     namespace data
     {
@@ -61,4 +61,4 @@ namespace fsm
             return &m_values[m_memsize - 1] + 1;
         }
     }    // namespace data
-}    // namespace fsm
+}    // namespace marlin

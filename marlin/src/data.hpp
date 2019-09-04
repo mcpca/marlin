@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-// https://github.com/mcpca/fsm
+// https://github.com/mcpca/marlin
 
 #pragma once
 
@@ -29,9 +29,9 @@
 #include <cassert>
 #include <memory>
 
-#include "fsm/defs.hpp"
+#include "marlin/defs.hpp"
 
-namespace fsm
+namespace marlin
 {
     //! @brief Functions and types related to \c data_t.
     namespace data
@@ -116,4 +116,4 @@ namespace fsm
             std::unique_ptr<scalar_t[]> m_values;
         };
     }    // namespace data
-}    // namespace fsm
+}    // namespace marlin

@@ -21,18 +21,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-// https://github.com/mcpca/fsm
+// https://github.com/mcpca/marlin
 
 #pragma once
 
 #include <cassert>
-#include "fsm/defs.hpp"
+#include "marlin/defs.hpp"
 
 #ifndef NDEBUG
 #    include <numeric>
 #endif
 
-namespace fsm
+namespace marlin
 {
     //! @brief Functions and types related to \c level_t.
     namespace level
@@ -44,7 +44,7 @@ namespace fsm
         template<index_t N>
         class level_t
         {
-            static_assert(N <= fsm::dim, "");
+            static_assert(N <= marlin::dim, "");
             friend class level_t<N + 1>;
 
           public:
@@ -167,4 +167,4 @@ namespace fsm
         index_t level_t<1>::sum() { return m_value; }
 
     }    // namespace level
-}    // namespace fsm
+}    // namespace marlin

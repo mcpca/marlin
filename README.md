@@ -1,4 +1,4 @@
-fsm
+marlin
 ===
 
 A C++14 implementation of a Lax-Friedrichs fast sweeping method for first-order
@@ -43,7 +43,7 @@ Usage
 
 The number of dimensions and the floating value type to use in computations
 (i.e., `float`, `double` or `long double`) can be set in the header
-`fsm/include/defs.hpp`.
+`marlin/include/defs.hpp`.
 The dimension can also be set using the macro `FSM_N_DIMS`.
 
 The provided hdf5 file should have a dataset named `cost_function` with a number

@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-// https://github.com/mcpca/fsm
+// https://github.com/mcpca/marlin
 
 #include <iostream>
 
@@ -29,7 +29,7 @@
 #include <h5cpp/utilities/array_adapter.hpp>
 #include "io.hpp"
 
-namespace fsm
+namespace marlin
 {
     namespace io
     {
@@ -125,4 +125,4 @@ namespace fsm
         }
 
     }    // namespace io
-}    // namespace fsm
+}    // namespace marlin

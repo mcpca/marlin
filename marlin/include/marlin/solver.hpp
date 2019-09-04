@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-// https://github.com/mcpca/fsm
+// https://github.com/mcpca/marlin
 
 #pragma once
 
@@ -35,7 +35,7 @@
 
 #include "ThreadPool/ThreadPool.h"
 
-namespace fsm
+namespace marlin
 {
     namespace grid
     {
@@ -154,4 +154,4 @@ namespace fsm
             std::vector<std::vector<point_t>> m_levels;
         };
     }    // namespace solver
-}    // namespace fsm
+}    // namespace marlin
