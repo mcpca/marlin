@@ -2,6 +2,8 @@ add_subdirectory(external)
 
 find_package(h5cpp REQUIRED)
 
+include(cmake/Compiler.cmake)
+
 add_library(
         marlin
         src/solver.cpp
@@ -25,6 +27,14 @@ target_compile_options(
                 -Werror
                 -pedantic
 )
+
+if(MARLIN_COMPILER_SUPPORTS_MARCH_NATIVE)
+        target_compile_options(marlin PRIVATE -march=native)
+endif()
+
+if(MARLIN_COMPILER_SUPPORTS_MTUNE_NATIVE)
+        target_compile_options(marlin PRIVATE -mtune=native)
+endif()
 
 target_include_directories(marlin PUBLIC include PRIVATE src)
 target_link_libraries(marlin PRIVATE h5cpp PUBLIC thread_pool)
