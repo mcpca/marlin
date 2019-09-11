@@ -23,7 +23,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // https://github.com/mcpca/marlin
 
-#if defined(NDEGUB) and not defined(PRINT_DEBUG_MSGS)
+#if defined(NDEBUG) and not defined(PRINT_DEBUG_MSGS)
 #    define FSM_DEBUG(x) ;
 #else
 #    define FSM_DEBUG(x) x
