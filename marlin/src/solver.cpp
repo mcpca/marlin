@@ -51,7 +51,7 @@ namespace marlin
             std::function<vector_t(input_t const&)> const& viscosity,
             params_t const& params)
         {
-            auto data = io::read(filename, std::string("cost_function"));
+            auto data = io::read(filename, "cost_function");
 
             if(io::dset_exists(filename, "value_function"))
             {
