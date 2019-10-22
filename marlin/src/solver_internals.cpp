@@ -105,9 +105,10 @@ namespace marlin
             assert(dir >= 0);
             assert(dir < n_sweeps);
             assert(start >= 0);
-            assert(start < static_cast<int>(points->size()));
+            assert(static_cast<size_t>(start) < points->size());
+
             assert(end >= 0);
-            assert(end <= static_cast<int>(points->size()));
+            assert(static_cast<size_t>(end) <= points->size());
             assert(start <= end);
 
             scalar_t diff = 0;
