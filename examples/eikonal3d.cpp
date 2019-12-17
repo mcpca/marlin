@@ -9,16 +9,17 @@
 int main()
 {
 #if MARLIN_N_DIMS == 3
-    auto h = [](auto x, auto&& p) -> marlin::scalar_t {
+    auto h = [](auto, auto&& p) -> marlin::scalar_t {
         // Norm of p
         return std::sqrt(
             std::inner_product(std::begin(p), std::end(p), std::begin(p), 0.0));
     };
 
-    constexpr std::array<std::pair<marlin::scalar_t, marlin::scalar_t>, marlin::dim>
+    constexpr std::array<std::pair<marlin::scalar_t, marlin::scalar_t>,
+                         marlin::dim>
         vertices = { { { -1.0, 1.0 }, { -1.0, 1.0 }, { -1.0, 1.0 } } };
 
-    auto viscosity = [](auto x){ return marlin::vector_t{1.0, 1.0, 1.0}; };
+    auto viscosity = [](auto) { return marlin::vector_t{ 1.0, 1.0, 1.0 }; };
 
     marlin::solver::params_t params;
     params.tolerance = 1.0e-4;

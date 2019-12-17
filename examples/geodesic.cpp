@@ -9,7 +9,8 @@
 int main()
 {
 #if MARLIN_N_DIMS == 2
-    constexpr std::array<std::pair<marlin::scalar_t, marlin::scalar_t>, marlin::dim>
+    constexpr std::array<std::pair<marlin::scalar_t, marlin::scalar_t>,
+                         marlin::dim>
         vertices = { { { -0.5, 0.5 }, { -0.5, 0.5 } } };
 
     constexpr std::array<int, marlin::dim> npts = { { 201, 201 } };
@@ -27,18 +28,20 @@ int main()
     };
 
     auto grad = [](auto const& x) {
-        return marlin::vector_t{ static_cast<marlin::scalar_t>(
-                                  0.9 * 2 * M_PI * std::cos(2 * M_PI * x[0]) *
-                                  std::sin(2 * M_PI * x[1])),
-                              static_cast<marlin::scalar_t>(
-                                  0.9 * 2 * M_PI * std::sin(2 * M_PI * x[0]) *
-                                  std::cos(2 * M_PI * x[1])) };
+        return marlin::vector_t{
+            static_cast<marlin::scalar_t>(0.9 * 2 * M_PI *
+                                          std::cos(2 * M_PI * x[0]) *
+                                          std::sin(2 * M_PI * x[1])),
+            static_cast<marlin::scalar_t>(0.9 * 2 * M_PI *
+                                          std::sin(2 * M_PI * x[0]) *
+                                          std::cos(2 * M_PI * x[1]))
+        };
     };
 
     auto speed = [&grad](auto const& x, auto omega) -> marlin::scalar_t {
         auto g = grad(x);
         auto s = std::sin(omega);
-        auto ss = std::sin(2 * omega);
+        auto ss = std::sin(2.0 * omega);
         auto c = std::cos(omega);
         auto num =
             1 + g[0] * g[0] * s * s + g[1] * g[1] * c * c - g[0] * g[1] * ss;
@@ -54,7 +57,7 @@ int main()
         return norm * speed(z, omega);
     };
 
-    auto viscosity = [](auto x) { return marlin::vector_t{ 1.0, 1.0 }; };
+    auto viscosity = [](auto) { return marlin::vector_t{ 1.0, 1.0 }; };
 
     marlin::solver::params_t params;
     params.tolerance = 1.0e-4;
