@@ -23,10 +23,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 // https://github.com/mcpca/marlin
 
-#if defined(NDEBUG) and not defined(PRINT_DEBUG_MSGS)
-#    define FSM_DEBUG(x) ;
+#if defined(NDEBUG) and not defined(MARLIN_PRINT_DEBUG_MSGS)
+#    define MARLIN_DEBUG(x) ;
 #else
-#    define FSM_DEBUG(x) x
+#    define MARLIN_DEBUG(x) x
 #endif
 
 #include <algorithm>
@@ -134,12 +134,12 @@ namespace marlin
             std::cout << "Initialized. Solving (" << n_workers << " threads)..."
                       << std::endl;
 
-            FSM_DEBUG(auto niter = 0;
-                      std::cerr << "Iteration " << niter++ << ":\n";)
+            MARLIN_DEBUG(auto niter = 0;
+                         std::cerr << "Iteration " << niter++ << ":\n";)
 
             while(!iterate())
             {
-                FSM_DEBUG(std::cerr << "Iteration " << niter++ << ":\n";)
+                MARLIN_DEBUG(std::cerr << "Iteration " << niter++ << ":\n";)
             }
 
             std::cout << "Done. Writing to " << m_filename << "..."
@@ -149,20 +149,20 @@ namespace marlin
 
         void solver_t::initialize()
         {
-            FSM_DEBUG(auto ntargetpts = 0;)
+            MARLIN_DEBUG(auto ntargetpts = 0;)
 
             for(index_t i = 0; i < m_cost->size(); ++i)
             {
                 if(m_cost->at(i) < scalar_t{ 0.0 })
                 {
-                    FSM_DEBUG(++ntargetpts;)
+                    MARLIN_DEBUG(++ntargetpts;)
 
                     m_soln->at(i) = -(m_cost->at(i) + scalar_t{ 1.0 });
                 }
             }
 
-            FSM_DEBUG(std::cerr << "Found " << ntargetpts
-                                << " target grid points." << '\n';)
+            MARLIN_DEBUG(std::cerr << "Found " << ntargetpts
+                                   << " target grid points." << '\n';)
         }
 
         bool solver_t::iterate()
@@ -172,12 +172,12 @@ namespace marlin
                 scalar_t diff = 0;
 
                 diff = sweep(dir);
-                FSM_DEBUG(std::cerr << "Sweep " << dir << ": delta = " << diff
-                                    << '\n';)
+                MARLIN_DEBUG(std::cerr << "Sweep " << dir
+                                       << ": delta = " << diff << '\n';)
                 diff = std::max(diff, boundary());
-                FSM_DEBUG(std::cerr << "Sweep " << dir
-                                    << " (after boundary): delta = " << diff
-                                    << '\n';)
+                MARLIN_DEBUG(std::cerr << "Sweep " << dir
+                                       << " (after boundary): delta = " << diff
+                                       << '\n';)
                 if(diff < m_tolerance)
                 {
                     return true;

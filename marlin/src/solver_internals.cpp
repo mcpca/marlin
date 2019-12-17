@@ -125,7 +125,7 @@ namespace marlin
                 auto const data = estimate_p(point, m_soln.get(), m_grid.get());
                 auto const old = m_soln->at(index);
 
-#ifdef FSM_USE_ROWMAJOR
+#ifdef MARLIN_USE_ROWMAJOR
                 auto const sigma = m_viscosity(index);
                 auto const scale_ = scale(sigma, m_grid->h());
 

@@ -8,7 +8,7 @@
 
 int main()
 {
-#if FSM_N_DIMS == 3
+#if MARLIN_N_DIMS == 3
     auto h = [](auto x, auto&& p) -> marlin::scalar_t {
         // Norm of p
         return std::sqrt(

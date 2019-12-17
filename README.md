@@ -44,7 +44,7 @@ Usage
 The number of dimensions and the floating value type to use in computations
 (i.e., `float`, `double` or `long double`) can be set in the header
 `marlin/include/defs.hpp`.
-The dimension can also be set using the macro `FSM_N_DIMS`.
+The dimension can also be set using the macro `MARLIN_N_DIMS`.
 
 The provided hdf5 file should have a dataset named `cost_function` with a number
 of dimensions equal to that defined in `defs.hpp`.

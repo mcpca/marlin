@@ -8,7 +8,7 @@
 
 int main()
 {
-#if FSM_N_DIMS == 2
+#if MARLIN_N_DIMS == 2
     constexpr std::array<std::pair<marlin::scalar_t, marlin::scalar_t>, marlin::dim>
         vertices = { { { -0.5, 0.5 }, { -0.5, 0.5 } } };
 

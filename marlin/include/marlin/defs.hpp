@@ -29,18 +29,18 @@
 #include <functional>
 #include <type_traits>
 
-#ifndef FSM_N_DIMS
-#    define FSM_N_DIMS 3
+#ifndef MARLIN_N_DIMS
+#    define MARLIN_N_DIMS 3
 #endif
 
-#ifndef FSM_N_WORKERS
+#ifndef MARLIN_N_WORKERS
 #    include <thread>
 #endif
 
 namespace marlin
 {
     //! Number of dimensions.
-    constexpr auto dim = FSM_N_DIMS;
+    constexpr auto dim = MARLIN_N_DIMS;
     static_assert(std::is_integral<decltype(dim)>::value,
                   "Number of dimensions must be a positive integer.");
     static_assert(dim > 1, "The number of dimensions must be at least two.");
@@ -50,7 +50,7 @@ namespace marlin
     //! Number of boundaries.
     constexpr auto n_boundaries = 2 * dim;
 
-#ifndef FSM_N_WORKERS
+#ifndef MARLIN_N_WORKERS
     //! Number of threads.
     //! If the number of threads is not given, try hardware_concurrency.
     static int const n_workers = [] {
@@ -58,7 +58,7 @@ namespace marlin
         return hc > 0 ? hc : 2;
     }();
 #else
-    constexpr auto n_workers = FSM_N_WORKERS;
+    constexpr auto n_workers = MARLIN_N_WORKERS;
     static_assert(std::is_integral<decltype(n_workers)>::value,
                   "Number of workers must be a positive integer.");
     static_assert(n_workers > 1, "The number of workers must be at least two.");
@@ -76,7 +76,7 @@ namespace marlin
 
     //! The Hamiltonian can use either the row-major index of a gridpoint or its
     //! representation as a list of indices.
-#ifdef FSM_USE_ROWMAJOR
+#ifdef MARLIN_USE_ROWMAJOR
     using input_t = index_t;
 #else
     using input_t = point_t;

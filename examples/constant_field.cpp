@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv)
 {
-#if FSM_N_DIMS == 2
+#if MARLIN_N_DIMS == 2
 
     std::array<std::pair<marlin::scalar_t, marlin::scalar_t>, marlin::dim> vertices = {
         { { -1.0, 1.0 }, { -1.0, 1.0 } }
