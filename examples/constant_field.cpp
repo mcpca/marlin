@@ -39,12 +39,11 @@ int main(int argc, char** argv)
     params.tolerance = 1.0e-4;
     params.maxval = 5.0;
 
-    marlin::solver::solver_t s(
-        "../data/constant_field.h5", h, vertices, viscosity, params);
+    marlin::solver::solver_t s("../data/constant_field.h5", vertices, params);
 
     timer::timer_t t;
 
-    s.solve();
+    s.solve(h, viscosity);
 
     std::cout << "Took " << t.get_elapsed_sec<double>() << " seconds."
               << std::endl;

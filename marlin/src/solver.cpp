@@ -23,14 +23,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // https://github.com/mcpca/marlin
 
-#if defined(NDEBUG) and not defined(MARLIN_PRINT_DEBUG_MSGS)
-#    define MARLIN_DEBUG(x) ;
-#else
-#    define MARLIN_DEBUG(x) x
-#endif
-
 #include <algorithm>
-#include <iostream>
 #include <numeric>
 
 #include "marlin/solver.hpp"
@@ -38,17 +31,13 @@
 #include "io.hpp"
 #include "levels.hpp"
 
-#include "ThreadPool/ThreadPool.h"
-
 namespace marlin
 {
     namespace solver
     {
         solver_t make_solver(
             std::string const& filename,
-            hamiltonian_t const& hamiltonian,
             std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-            std::function<vector_t(input_t const&)> const& viscosity,
             params_t const& params)
         {
             auto data = io::read(filename, "cost_function");
@@ -60,12 +49,9 @@ namespace marlin
                     "given file.");
             }
 
-            grid_t g(vertices, data.size);
             return solver_t(filename,
-                            hamiltonian,
                             std::move(data.data),
-                            g,
-                            viscosity,
+                            grid_t(vertices, data.size),
                             params);
         }
 
@@ -75,30 +61,19 @@ namespace marlin
 
         solver_t::solver_t(
             std::string const& filename,
-            hamiltonian_t const& hamiltonian,
             std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-            std::function<vector_t(input_t const&)> const& viscosity,
             params_t const& params)
-            : solver_t(make_solver(filename,
-                                   hamiltonian,
-                                   vertices,
-                                   viscosity,
-                                   params))
+            : solver_t(make_solver(filename, vertices, params))
         {}
 
-        solver_t::solver_t(
-            std::string const& filename,
-            hamiltonian_t const& hamiltonian,
-            data_t cost,
-            grid_t const& grid,
-            std::function<vector_t(input_t const&)> const& viscosity,
-            params_t const& params)
+        solver_t::solver_t(std::string const& filename,
+                           data_t cost,
+                           grid_t const& grid,
+                           params_t const& params)
             : m_filename(filename),
-              m_hamiltonian(hamiltonian),
               m_grid(grid),
               m_soln(m_grid.npts(), params.maxval),
               m_cost(std::move(cost)),
-              m_viscosity(viscosity),
               m_tolerance(params.tolerance),
               m_pool(std::make_unique<ThreadPool>(n_workers - 1))
         {
@@ -126,26 +101,6 @@ namespace marlin
             }
         }
 
-        void solver_t::solve()
-        {
-            std::cout << "Initializing problem instance..." << std::endl;
-            initialize();
-            std::cout << "Initialized. Solving (" << n_workers << " threads)..."
-                      << std::endl;
-
-            MARLIN_DEBUG(auto niter = 0;
-                         std::cerr << "Iteration " << niter++ << ":\n";)
-
-            while(!iterate())
-            {
-                MARLIN_DEBUG(std::cerr << "Iteration " << niter++ << ":\n";)
-            }
-
-            std::cout << "Done. Writing to " << m_filename << "..."
-                      << std::endl;
-            io::write(m_filename, "value_function", m_soln, m_grid.size());
-        }
-
         void solver_t::initialize()
         {
             MARLIN_DEBUG(auto ntargetpts = 0;)
@@ -164,26 +119,9 @@ namespace marlin
                                    << " target grid points." << '\n';)
         }
 
-        bool solver_t::iterate()
+        void solver_t::write() const
         {
-            for(auto dir = 0; dir < n_sweeps; ++dir)
-            {
-                scalar_t diff = 0;
-
-                diff = sweep(dir);
-                MARLIN_DEBUG(std::cerr << "Sweep " << dir
-                                       << ": delta = " << diff << '\n';)
-                diff = std::max(diff, boundary());
-                MARLIN_DEBUG(std::cerr << "Sweep " << dir
-                                       << " (after boundary): delta = " << diff
-                                       << '\n';)
-                if(diff < m_tolerance)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            io::write(m_filename, "value_function", m_soln, m_grid.size());
         }
     }    // namespace solver
 }    // namespace marlin
