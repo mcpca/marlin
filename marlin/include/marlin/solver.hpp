@@ -32,8 +32,9 @@
 #include <vector>
 
 #include "defs.hpp"
-#include "grid.hpp"
+
 #include "data.hpp"
+#include "grid.hpp"
 
 class ThreadPool;
 
