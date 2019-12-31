@@ -47,12 +47,12 @@ namespace marlin
             //! number of points in each dimension.
             grid_t(
                 std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-                point_t const& size);
+                point_t const& size) noexcept;
 
             //! @brief Compiler-generated copy constructor.
-            grid_t(grid_t const&) = default;
+            grid_t(grid_t const&) noexcept = default;
             //! @brief Compiler-generated copy assignment.
-            grid_t& operator=(grid_t const&) = default;
+            grid_t& operator=(grid_t const&) noexcept = default;
 
             //! @brief Compiler-generated move constructor.
             grid_t(grid_t&&) noexcept = default;
@@ -66,33 +66,33 @@ namespace marlin
             //
             //! @param i dimension.
             //! @return size along dimension \p i.
-            index_t size(index_t i) const;
+            index_t size(index_t i) const noexcept;
             //! @brief Size of the grid in each dimension.
-            point_t const& size() const;
+            point_t const& size() const noexcept;
             //! @brief Total number of gridpoints.
-            index_t npts() const;
+            index_t npts() const noexcept;
 
             //! @brief Grid resolution in a dimension.
             //
             //! @param i dimension.
-            scalar_t h(index_t i) const;
+            scalar_t h(index_t i) const noexcept;
             //! @brief Grid resolution in each dimension.
-            vector_t const& h() const;
+            vector_t const& h() const noexcept;
 
             //! @brief Number of levels.
-            index_t n_levels() const;
+            index_t n_levels() const noexcept;
 
             //! @brief Convert from a row major offset to a list of indices.
             //
             //! @param index row major offset of a point.
             //! @return indices of the corresponding gridpoint.
-            point_t point(index_t index) const;
+            point_t point(index_t index) const noexcept;
 
             //! @brief Convert from a list of indices to a row major offset.
             //
             //! @param point indices of a gridpoint.
             //! @return row major index of \p point.
-            index_t index(point_t const& point) const;
+            index_t index(point_t const& point) const noexcept;
 
             //! @brief Rotate the axes to match a given sweep order.
             //
@@ -102,13 +102,13 @@ namespace marlin
             //! @param point indices of a gridpoint.
             //! @param dir sweeping direction.
             //! @return \p point after the axes rotation.
-            point_t rotate_axes(point_t point, int dir) const;
+            point_t rotate_axes(point_t point, int dir) const noexcept;
 
             //! @brief Check if a point is in the computational boundary.
             //
             //! @param point indices of a gridpoint.
             //! @return true if \p point is in the computational boundary.
-            bool is_boundary(point_t const& point) const;
+            bool is_boundary(point_t const& point) const noexcept;
 
             //! @brief Get the next point according to sweeping order \p dir.
             //
@@ -119,7 +119,7 @@ namespace marlin
             //! @param idx row major index of current point.
             //! @param dir sweeping direction.
             //! @return index of the next point.
-            index_t next(index_t idx, index_t dir) const;
+            index_t next(index_t idx, index_t dir) const noexcept;
 
             //! @brief Get next point in boundary \p boundary.
             //
@@ -130,7 +130,8 @@ namespace marlin
             //! @param idx row major index of current point.
             //! @param boundary boundary identifier.
             //! @return index of the next point.
-            index_t next_in_boundary(index_t idx, index_t boundary) const;
+            index_t next_in_boundary(index_t idx, index_t boundary) const
+                noexcept;
 
           private:
             // Number of points in each dimension.

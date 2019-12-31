@@ -35,7 +35,7 @@ namespace marlin
     {
         grid_t::grid_t(
             std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-            point_t const& size)
+            point_t const& size) noexcept
             : m_size(size),
               m_npts(std::accumulate(std::begin(m_size),
                                      std::end(m_size),
@@ -66,25 +66,25 @@ namespace marlin
             }());
         }
 
-        index_t grid_t::size(index_t i) const
+        index_t grid_t::size(index_t i) const noexcept
         {
             assert(i < dim);
             return m_size[i];
         }
 
-        point_t const& grid_t::size() const { return m_size; }
+        point_t const& grid_t::size() const noexcept { return m_size; }
 
-        index_t grid_t::npts() const { return m_npts; }
+        index_t grid_t::npts() const noexcept { return m_npts; }
 
-        scalar_t grid_t::h(index_t i) const
+        scalar_t grid_t::h(index_t i) const noexcept
         {
             assert(i < dim);
             return m_h[i];
         }
 
-        vector_t const& grid_t::h() const { return m_h; }
+        vector_t const& grid_t::h() const noexcept { return m_h; }
 
-        point_t grid_t::point(index_t index) const
+        point_t grid_t::point(index_t index) const noexcept
         {
             assert(index < m_npts);
 
@@ -99,7 +99,7 @@ namespace marlin
             return point;
         }
 
-        index_t grid_t::index(point_t const& point) const
+        index_t grid_t::index(point_t const& point) const noexcept
         {
             assert([&] {
                 for(auto i = 0; i < dim; ++i)
@@ -120,7 +120,7 @@ namespace marlin
             return offset;
         }
 
-        inline bool backwards(index_t dir, index_t dimension)
+        inline bool backwards(index_t dir, index_t dimension) noexcept
         {
             assert(dir < n_sweeps);
             assert(dimension < dim);
@@ -128,7 +128,7 @@ namespace marlin
             return static_cast<bool>(dir & (1 << dimension));
         }
 
-        point_t grid_t::rotate_axes(point_t point, int dir) const
+        point_t grid_t::rotate_axes(point_t point, int dir) const noexcept
         {
             for(int i = 0; i < dim; ++i)
             {
@@ -141,9 +141,9 @@ namespace marlin
             return point;
         }
 
-        index_t grid_t::n_levels() const { return m_nlevels; }
+        index_t grid_t::n_levels() const noexcept { return m_nlevels; }
 
-        bool grid_t::is_boundary(point_t const& point) const
+        bool grid_t::is_boundary(point_t const& point) const noexcept
         {
             for(auto i = 0; i < dim; ++i)
             {
@@ -156,7 +156,7 @@ namespace marlin
             return false;
         }
 
-        index_t grid_t::next(index_t idx, index_t dir) const
+        index_t grid_t::next(index_t idx, index_t dir) const noexcept
         {
             assert(idx <= m_npts);
             assert(dir < n_sweeps);
@@ -202,7 +202,7 @@ namespace marlin
             return idx;
         }
 
-        inline index_t rotate(index_t boundary_dim, index_t dimension)
+        inline index_t rotate(index_t boundary_dim, index_t dimension) noexcept
         {
             assert(boundary_dim < dim);
             assert(dimension < dim - 1);
@@ -213,6 +213,7 @@ namespace marlin
         }
 
         index_t grid_t::next_in_boundary(index_t idx, index_t boundary) const
+            noexcept
         {
             assert(idx <= m_npts);
             assert(boundary < 2 * dim);
