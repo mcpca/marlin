@@ -121,15 +121,15 @@ namespace marlin
             bool iterate();
 
             // Sweeps all gridpoints in the direction dir.
-            scalar_t sweep(int dir);
+            scalar_t sweep(int dir) noexcept;
             // Updates the boundary points.
-            scalar_t boundary();
+            scalar_t boundary() noexcept;
 
             // Updates a group of points.
             scalar_t update_points(std::vector<point_t> const* points,
                                    int dir,
                                    int start,
-                                   int end);
+                                   int end) noexcept;
 
             // Path to a HDF5 file containing the cost function.
             std::string m_filename;

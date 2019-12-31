@@ -49,7 +49,7 @@ namespace marlin
         static inline update_data_internal_t estimate_p(
             point_t const& point,
             data::data_t const* soln,
-            grid::grid_t const* grid)
+            grid::grid_t const* grid) noexcept
         {
             assert(soln != nullptr);
             assert(grid != nullptr);
@@ -77,7 +77,7 @@ namespace marlin
                                       scalar_t scale,
                                       scalar_t cost,
                                       vector_t const& avgs,
-                                      vector_t const& viscosity)
+                                      vector_t const& viscosity) noexcept
         {
             assert(cost > 0);
             return scale * (cost - ham_value +
@@ -88,7 +88,7 @@ namespace marlin
         }
 
         static inline scalar_t scale(vector_t const& viscosity,
-                                     vector_t const& h)
+                                     vector_t const& h) noexcept
         {
             return scalar_t{ 1.0 } / std::inner_product(std::begin(viscosity),
                                                         std::end(viscosity),
@@ -101,7 +101,7 @@ namespace marlin
         scalar_t solver_t::update_points(std::vector<point_t> const* points,
                                          int dir,
                                          int start,
-                                         int end)
+                                         int end) noexcept
         {
             assert(points != nullptr);
             assert(dir >= 0);
@@ -158,7 +158,7 @@ namespace marlin
             return diff;
         }
 
-        scalar_t solver_t::sweep(int dir)
+        scalar_t solver_t::sweep(int dir) noexcept
         {
             assert(dir >= 0);
             assert(dir < n_sweeps);
@@ -198,10 +198,11 @@ namespace marlin
             return diff;
         }
 
-        static inline scalar_t update_boundary(index_t index,
-                                               index_t boundary,
-                                               data::data_t const* soln,
-                                               grid::grid_t const* grid)
+        static inline scalar_t update_boundary(
+            index_t index,
+            index_t boundary,
+            data::data_t const* soln,
+            grid::grid_t const* grid) noexcept
         {
             assert(boundary < n_boundaries);
             assert(soln != nullptr);
@@ -223,7 +224,7 @@ namespace marlin
                             soln->at(index));
         }
 
-        scalar_t solver_t::boundary()
+        scalar_t solver_t::boundary() noexcept
         {
             scalar_t diff = 0;
             auto const size = m_grid->npts();
