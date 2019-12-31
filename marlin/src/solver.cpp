@@ -40,6 +40,8 @@
 #include "io.hpp"
 #include "levels.hpp"
 
+#include "ThreadPool/ThreadPool.h"
+
 namespace marlin
 {
     namespace solver

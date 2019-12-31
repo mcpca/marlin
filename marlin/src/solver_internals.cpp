@@ -31,6 +31,8 @@
 #include <cassert>
 #include <numeric>
 
+#include "ThreadPool/ThreadPool.h"
+
 namespace marlin
 {
     namespace solver

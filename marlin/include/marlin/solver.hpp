@@ -33,7 +33,7 @@
 
 #include "defs.hpp"
 
-#include "ThreadPool/ThreadPool.h"
+class ThreadPool;
 
 namespace marlin
 {
