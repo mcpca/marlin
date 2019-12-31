@@ -53,21 +53,21 @@ namespace marlin
             //! @param sum sum of the coordinate indices of the the gridpoints
             //! in the set
             //! @param limits grid size along each dimension.
-            level_t(index_t sum, point_t const& limits);
+            level_t(index_t sum, point_t const& limits) noexcept;
 
             //! @brief Get the indices of the current point.
             //
             //! @param range pointer to the first element of a range with N
             //! elements
-            void get(index_t* range) const;
+            void get(index_t* range) const noexcept;
 
             //! @brief Generate next point.
-            bool next();
+            bool next() noexcept;
 
           private:
             //! @brief Set the total sum to a new value.
-            bool reset(index_t sum);
-            index_t sum();
+            bool reset(index_t sum) noexcept;
+            index_t sum() noexcept;
 
             //! @brief Upper limit for this element.
             index_t m_limit;
@@ -84,21 +84,21 @@ namespace marlin
             friend class level_t<2>;
 
           public:
-            level_t(index_t sum, point_t const& limits);
+            level_t(index_t sum, point_t const& limits) noexcept;
 
-            void get(index_t* range) const;
-            bool next() const;
+            void get(index_t* range) const noexcept;
+            bool next() const noexcept;
 
           private:
-            bool reset(index_t sum);
-            index_t sum();
+            bool reset(index_t sum) noexcept;
+            index_t sum() noexcept;
 
             index_t m_value;
             index_t m_limit;
         };
 
         template<index_t N>
-        level_t<N>::level_t(index_t sum, point_t const& limits)
+        level_t<N>::level_t(index_t sum, point_t const& limits) noexcept
             : m_limit(limits[dim - N]),
               m_value(std::min(sum, m_limit - 1)),
               m_sublevel(sum > m_value ? sum - m_value : 0, limits)
@@ -109,14 +109,14 @@ namespace marlin
                    sum);
         }
 
-        level_t<1>::level_t(index_t sum, point_t const& limits)
+        level_t<1>::level_t(index_t sum, point_t const& limits) noexcept
             : m_value(sum), m_limit(limits.back())
         {
             assert(m_value < m_limit);
         }
 
         template<index_t N>
-        void level_t<N>::get(index_t* range) const
+        void level_t<N>::get(index_t* range) const noexcept
         {
             assert(range != nullptr);
 
@@ -124,14 +124,14 @@ namespace marlin
             m_sublevel.get(range + 1);
         }
 
-        void level_t<1>::get(index_t* range) const
+        void level_t<1>::get(index_t* range) const noexcept
         {
             assert(range != nullptr);
             *range = m_value;
         }
 
         template<index_t N>
-        bool level_t<N>::next()
+        bool level_t<N>::next() noexcept
         {
             if(m_sublevel.next())
                 return true;
@@ -143,28 +143,28 @@ namespace marlin
             return m_sublevel.reset(m_sublevel.sum() + 1);
         }
 
-        bool level_t<1>::next() const { return false; }
+        bool level_t<1>::next() const noexcept { return false; }
 
         template<index_t N>
-        bool level_t<N>::reset(index_t sum)
+        bool level_t<N>::reset(index_t sum) noexcept
         {
             m_value = std::min(sum, m_limit - 1);
             return m_sublevel.reset(sum > m_value ? sum - m_value : 0);
         }
 
-        bool level_t<1>::reset(index_t sum)
+        bool level_t<1>::reset(index_t sum) noexcept
         {
             m_value = sum;
             return m_value < m_limit;
         }
 
         template<index_t N>
-        index_t level_t<N>::sum()
+        index_t level_t<N>::sum() noexcept
         {
             return m_value + m_sublevel.sum();
         }
 
-        index_t level_t<1>::sum() { return m_value; }
+        index_t level_t<1>::sum() noexcept { return m_value; }
 
     }    // namespace level
 }    // namespace marlin
