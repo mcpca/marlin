@@ -46,15 +46,21 @@ namespace marlin
             //
             //! @param memsize number of datapoints.
             //! @param values unique_ptr holding the data.
-            data_t(index_t memsize,
-                   std::unique_ptr<scalar_t[]> values) noexcept;
+            data_t(index_t memsize, std::unique_ptr<scalar_t[]> values) noexcept
+                : m_memsize(memsize), m_values(std::move(values))
+            {}
 
             //! @brief Allocate new array.
             //
             //! @param memsize number of datapoints.
             //! @param fill value the new array will be filled with.
             explicit data_t(index_t memsize,
-                            scalar_t fill = scalar_t{ 0 }) noexcept;
+                            scalar_t fill = scalar_t{ 0 }) noexcept
+                : m_memsize(memsize),
+                  m_values(std::make_unique<scalar_t[]>(m_memsize))
+            {
+                std::fill_n(this->begin(), m_memsize, fill);
+            }
 
             // Disable copying.
             data_t(data_t const&) = delete;
@@ -96,20 +102,25 @@ namespace marlin
             }
 
             //! @brief Get raw pointer to first datapoint.
-            scalar_t* get_values() const noexcept;
+            scalar_t* get_values() const noexcept { return m_values.get(); }
 
             //! @brief Size of the underlying array.
-            index_t size() const noexcept;
+            index_t size() const noexcept { return m_memsize; }
 
             //! @brief Iterator to the beggining of the data.
-            iterator_t begin() noexcept;
+            iterator_t begin() noexcept { return &m_values[0]; }
+
             //! @brief Constant iterator to the beggining of the data.
-            const_iterator_t begin() const noexcept;
+            const_iterator_t begin() const noexcept { return &m_values[0]; }
 
             //! @brief Iterator to the end of the data.
-            iterator_t end() noexcept;
+            iterator_t end() noexcept { return &m_values[m_memsize - 1] + 1; }
+
             //! @brief Constant iterator to the end of the data.
-            const_iterator_t end() const noexcept;
+            const_iterator_t end() const noexcept
+            {
+                return &m_values[m_memsize - 1] + 1;
+            }
 
           private:
             // Size of the underlying array.
