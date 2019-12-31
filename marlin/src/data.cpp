@@ -29,34 +29,38 @@ namespace marlin
 {
     namespace data
     {
-        data_t::data_t(index_t memsize, std::unique_ptr<scalar_t[]> values)
+        data_t::data_t(index_t memsize,
+                       std::unique_ptr<scalar_t[]> values) noexcept
             : m_memsize(memsize), m_values(std::move(values))
         {}
 
-        data_t::data_t(index_t memsize, scalar_t fill)
+        data_t::data_t(index_t memsize, scalar_t fill) noexcept
             : m_memsize(memsize),
               m_values(std::make_unique<scalar_t[]>(m_memsize))
         {
             std::fill_n(this->begin(), m_memsize, fill);
         }
 
-        scalar_t* data_t::get_values() const { return m_values.get(); }
+        scalar_t* data_t::get_values() const noexcept { return m_values.get(); }
 
-        index_t data_t::size() const { return m_memsize; }
+        index_t data_t::size() const noexcept { return m_memsize; }
 
-        typename data_t::iterator_t data_t::begin() { return &m_values[0]; }
-
-        typename data_t::const_iterator_t data_t::begin() const
+        typename data_t::iterator_t data_t::begin() noexcept
         {
             return &m_values[0];
         }
 
-        typename data_t::iterator_t data_t::end()
+        typename data_t::const_iterator_t data_t::begin() const noexcept
+        {
+            return &m_values[0];
+        }
+
+        typename data_t::iterator_t data_t::end() noexcept
         {
             return &m_values[m_memsize - 1] + 1;
         }
 
-        typename data_t::const_iterator_t data_t::end() const
+        typename data_t::const_iterator_t data_t::end() const noexcept
         {
             return &m_values[m_memsize - 1] + 1;
         }

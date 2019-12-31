@@ -46,13 +46,15 @@ namespace marlin
             //
             //! @param memsize number of datapoints.
             //! @param values unique_ptr holding the data.
-            data_t(index_t memsize, std::unique_ptr<scalar_t[]> values);
+            data_t(index_t memsize,
+                   std::unique_ptr<scalar_t[]> values) noexcept;
 
             //! @brief Allocate new array.
             //
             //! @param memsize number of datapoints.
             //! @param fill value the new array will be filled with.
-            explicit data_t(index_t memsize, scalar_t fill = scalar_t{ 0 });
+            explicit data_t(index_t memsize,
+                            scalar_t fill = scalar_t{ 0 }) noexcept;
 
             // Disable copying.
             data_t(data_t const&) = delete;
@@ -76,7 +78,7 @@ namespace marlin
             //! Bounds checking is only performed in debug mode.
             //
             //! @param index index of the value to be read.
-            scalar_t at(index_t index) const
+            scalar_t at(index_t index) const noexcept
             {
                 assert(index < m_memsize);
                 return m_values[index];
@@ -87,27 +89,27 @@ namespace marlin
             //! Bounds checking is only performed in debug mode.
             //
             //! @param index index of the value to be read or written to.
-            scalar_t& at(index_t index)
+            scalar_t& at(index_t index) noexcept
             {
                 assert(index < m_memsize);
                 return m_values[index];
             }
 
             //! @brief Get raw pointer to first datapoint.
-            scalar_t* get_values() const;
+            scalar_t* get_values() const noexcept;
 
             //! @brief Size of the underlying array.
-            index_t size() const;
+            index_t size() const noexcept;
 
             //! @brief Iterator to the beggining of the data.
-            iterator_t begin();
+            iterator_t begin() noexcept;
             //! @brief Constant iterator to the beggining of the data.
-            const_iterator_t begin() const;
+            const_iterator_t begin() const noexcept;
 
             //! @brief Iterator to the end of the data.
-            iterator_t end();
+            iterator_t end() noexcept;
             //! @brief Constant iterator to the end of the data.
-            const_iterator_t end() const;
+            const_iterator_t end() const noexcept;
 
           private:
             // Size of the underlying array.
