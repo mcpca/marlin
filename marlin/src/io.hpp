@@ -25,18 +25,20 @@
 
 #pragma once
 
-#include "data.hpp"
+#include "marlin/data.hpp"
 #include "marlin/defs.hpp"
 
 namespace marlin
 {
+    using data_t = data::data_t<index_t, scalar_t>;
+
     //! @brief Functions for data input/output with hdf5 files.
     namespace io
     {
         //! @brief Holds a dataset and its size along each dimension.
         struct solver_data_t
         {
-            data::data_t data;
+            data_t data;
             point_t size;
         };
 
@@ -58,7 +60,7 @@ namespace marlin
         //! @param size the dimensions of the data.
         void write(std::string const& filename,
                    std::string const& dsetname,
-                   data::data_t const& data,
+                   data_t const& data,
                    point_t const& size);
 
         //! @brief Check whether a dataset exists in a hdf5 file.

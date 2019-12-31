@@ -32,19 +32,15 @@
 #include <vector>
 
 #include "defs.hpp"
+#include "grid.hpp"
+#include "data.hpp"
 
 class ThreadPool;
 
 namespace marlin
 {
-    namespace grid
-    {
-        struct grid_t;
-    }
-    namespace data
-    {
-        class data_t;
-    }
+    using grid_t = grid::grid_t<dim, index_t, scalar_t>;
+    using data_t = data::data_t<index_t, scalar_t>;
 
     namespace solver
     {
@@ -110,8 +106,8 @@ namespace marlin
             // read from the HDF5 file.
             solver_t(std::string const& filename,
                      hamiltonian_t const& hamiltonian,
-                     data::data_t cost,
-                     grid::grid_t const& grid,
+                     data_t cost,
+                     grid_t const& grid,
                      std::function<vector_t(input_t const&)> const& viscosity,
                      params_t const& params);
 
@@ -136,10 +132,9 @@ namespace marlin
             // Callable for evaluating the Hamiltonian.
             hamiltonian_t m_hamiltonian;
 
-            // Privately implemented members.
-            std::unique_ptr<grid::grid_t> m_grid;    // Grid.
-            std::unique_ptr<data::data_t> m_soln;    // Solution.
-            std::unique_ptr<data::data_t> m_cost;    // Cost function.
+            grid_t m_grid;    // Grid.
+            data_t m_soln;    // Solution.
+            data_t m_cost;    // Cost function.
 
             // Callable for evalutating the viscosity coefficients.
             std::function<vector_t(input_t const&)> m_viscosity;

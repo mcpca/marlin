@@ -29,8 +29,6 @@
 #include <cassert>
 #include <memory>
 
-#include "marlin/defs.hpp"
-
 namespace marlin
 {
     //! @brief Functions and types related to \c data_t.
@@ -39,9 +37,13 @@ namespace marlin
         //! @brief Range of scalar values.
         //
         //! Holds a heap-allocated array and its size.
+        template<typename Index, typename Scalar>
         class data_t
         {
           public:
+            using index_t = Index;
+            using scalar_t = Scalar;
+
             //! @brief Construct from preexisting data.
             //
             //! @param memsize number of datapoints.

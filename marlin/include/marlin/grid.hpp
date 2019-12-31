@@ -29,14 +29,13 @@
 #include <cassert>
 #include <numeric>
 
-#include "marlin/defs.hpp"
-
 namespace marlin
 {
     //! @brief Functions and types related to \c grid_t.
     namespace grid
     {
-        inline bool backwards(index_t dir, index_t dimension) noexcept
+        template<typename Index>
+        inline bool backwards(Index dir, unsigned dimension) noexcept
         {
             assert(dir < n_sweeps);
             assert(dimension < dim);
@@ -44,7 +43,8 @@ namespace marlin
             return static_cast<bool>(dir & (1 << dimension));
         }
 
-        inline index_t rotate(index_t boundary_dim, index_t dimension) noexcept
+        template<unsigned dim, typename Index>
+        inline Index rotate(Index boundary_dim, unsigned dimension) noexcept
         {
             assert(boundary_dim < dim);
             assert(dimension < dim - 1);
@@ -58,9 +58,18 @@ namespace marlin
         //
         //! Holds the grid parameters and implements the conversion
         //! between row major offsets and lists of indices.
+        template<int dim, typename Index, typename Scalar>
         struct grid_t
         {
           public:
+            using index_t = Index;
+            using point_t = std::array<index_t, dim>;
+            using scalar_t = Scalar;
+            using vector_t = std::array<scalar_t, dim>;
+
+            static_assert(dim >= 2,
+                          "Number of dimensions must be at least two.");
+
             //! @brief Constructor.
             //
             //! Construct a grid_t object given the limits of the grid and the
@@ -318,20 +327,20 @@ namespace marlin
 
                     // Increment from the dimension after the boundary
                     // dimension to the dimension right before.
-                    p[rotate(boundary_dim, 0)] += 1;
+                    p[rotate<dim>(boundary_dim, 0)] += 1;
 
                     for(auto i = 0; i < dim - 2; ++i)
                     {
-                        if(p[rotate(boundary_dim, i)] ==
-                           m_size[rotate(boundary_dim, i)])
+                        if(p[rotate<dim>(boundary_dim, i)] ==
+                           m_size[rotate<dim>(boundary_dim, i)])
                         {
-                            p[rotate(boundary_dim, i)] = 0;
-                            p[rotate(boundary_dim, i + 1)] += 1;
+                            p[rotate<dim>(boundary_dim, i)] = 0;
+                            p[rotate<dim>(boundary_dim, i + 1)] += 1;
                         }
                     }
 
-                    if(p[rotate(boundary_dim, dim - 2)] ==
-                       m_size[rotate(boundary_dim, dim - 2)])
+                    if(p[rotate<dim>(boundary_dim, dim - 2)] ==
+                       m_size[rotate<dim>(boundary_dim, dim - 2)])
                     {
                         idx = m_npts;
                     }

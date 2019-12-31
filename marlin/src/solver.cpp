@@ -35,8 +35,6 @@
 
 #include "marlin/solver.hpp"
 
-#include "data.hpp"
-#include "grid.hpp"
 #include "io.hpp"
 #include "levels.hpp"
 
@@ -62,7 +60,7 @@ namespace marlin
                     "given file.");
             }
 
-            grid::grid_t g(vertices, data.size);
+            grid_t g(vertices, data.size);
             return solver_t(filename,
                             hamiltonian,
                             std::move(data.data),
@@ -91,23 +89,22 @@ namespace marlin
         solver_t::solver_t(
             std::string const& filename,
             hamiltonian_t const& hamiltonian,
-            data::data_t cost,
-            grid::grid_t const& grid,
+            data_t cost,
+            grid_t const& grid,
             std::function<vector_t(input_t const&)> const& viscosity,
             params_t const& params)
             : m_filename(filename),
               m_hamiltonian(hamiltonian),
-              m_grid(std::make_unique<grid::grid_t>(grid)),
-              m_soln(std::make_unique<data::data_t>(m_grid->npts(),
-                                                    params.maxval)),
-              m_cost(std::make_unique<data::data_t>(std::move(cost))),
+              m_grid(grid),
+              m_soln(m_grid.npts(), params.maxval),
+              m_cost(std::move(cost)),
               m_viscosity(viscosity),
               m_tolerance(params.tolerance),
               m_pool(std::make_unique<ThreadPool>(n_workers - 1))
         {
-            for(index_t i = 0; i < m_grid->n_levels(); ++i)
+            for(index_t i = 0; i < m_grid.n_levels(); ++i)
             {
-                level::level_t<dim> level(i, m_grid->size());
+                level::level_t<dim> level(i, m_grid.size());
 
                 std::vector<point_t> points;
 
@@ -116,7 +113,7 @@ namespace marlin
                     point_t point;
                     level.get(point.data());
 
-                    if(!m_grid->is_boundary(point))
+                    if(!m_grid.is_boundary(point))
                     {
                         points.push_back(point);
                     }
@@ -146,20 +143,20 @@ namespace marlin
 
             std::cout << "Done. Writing to " << m_filename << "..."
                       << std::endl;
-            io::write(m_filename, "value_function", *m_soln, m_grid->size());
+            io::write(m_filename, "value_function", m_soln, m_grid.size());
         }
 
         void solver_t::initialize()
         {
             MARLIN_DEBUG(auto ntargetpts = 0;)
 
-            for(index_t i = 0; i < m_cost->size(); ++i)
+            for(index_t i = 0; i < m_cost.size(); ++i)
             {
-                if(m_cost->at(i) < scalar_t{ 0.0 })
+                if(m_cost.at(i) < scalar_t{ 0.0 })
                 {
                     MARLIN_DEBUG(++ntargetpts;)
 
-                    m_soln->at(i) = -(m_cost->at(i) + scalar_t{ 1.0 });
+                    m_soln.at(i) = -(m_cost.at(i) + scalar_t{ 1.0 });
                 }
             }
 
