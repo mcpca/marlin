@@ -73,16 +73,4 @@ namespace marlin
     using scalar_t = double;
     //! Representation of the value of a vector field at some gridpoint.
     using vector_t = std::array<scalar_t, dim>;
-
-    //! The Hamiltonian can use either the row-major index of a gridpoint or its
-    //! representation as a list of indices.
-#ifdef MARLIN_USE_ROWMAJOR
-    using input_t = index_t;
-#else
-    using input_t = point_t;
-#endif
-
-    //! Hamiltonian.
-    using hamiltonian_t = std::function<double(input_t, vector_t)>;
-
 }    // namespace marlin
