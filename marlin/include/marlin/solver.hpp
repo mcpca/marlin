@@ -166,7 +166,7 @@ namespace marlin
             // Caches the sets of points which can be updated in parallel in
             // each sweep.
             std::vector<std::vector<point_t>> m_levels;
-        };    // namespace detailclasssolver_t
+        };
 
         namespace detail
         {
