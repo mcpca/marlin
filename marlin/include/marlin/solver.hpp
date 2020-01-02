@@ -122,6 +122,9 @@ namespace marlin
             // Initialize the solution.
             void initialize();
 
+            // Fill m_levels.
+            void compute_levels();
+
             // Main loop.
             template<typename Hamiltonian, typename Viscosity>
             bool iterate(Hamiltonian const& hamiltonian,

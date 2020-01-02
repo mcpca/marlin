@@ -77,6 +77,11 @@ namespace marlin
               m_tolerance(params.tolerance),
               m_pool(std::make_unique<ThreadPool>(n_workers - 1))
         {
+            compute_levels();
+        }
+
+        void solver_t::compute_levels()
+        {
             for(index_t i = 0; i < m_grid.n_levels(); ++i)
             {
                 level::level_t<dim> level(i, m_grid.size());
