@@ -57,7 +57,7 @@ inline ThreadPool::ThreadPool(size_t threads) : stop(false)
             }
         });
 
-#if defined(MARLIN_USING_PTHREADS)
+#if defined(MARLIN_USING_PTHREADS) and !defined(MARLIN_NO_SETAFFINITY)
         // If using pthreads, assign a thread to each CPU using setaffinity.
         cpu_set_t cpuset;
         CPU_ZERO(&cpuset);
