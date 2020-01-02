@@ -234,9 +234,7 @@ namespace marlin
         void solver_t::solve(Hamiltonian const& hamiltonian,
                              Viscosity const& viscosity)
         {
-            std::cout << "Initializing problem instance..." << std::endl;
-            initialize();
-            std::cout << "Initialized. Solving (" << n_workers << " threads)..."
+            std::cout << "Solving (" << n_workers << " threads)..."
                       << std::endl;
 
             MARLIN_DEBUG(auto niter = 0;

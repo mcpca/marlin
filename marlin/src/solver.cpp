@@ -78,6 +78,7 @@ namespace marlin
               m_pool(std::make_unique<ThreadPool>(n_workers - 1))
         {
             compute_levels();
+            initialize();
         }
 
         void solver_t::compute_levels()
