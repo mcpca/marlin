@@ -78,10 +78,7 @@ namespace marlin
             //! HDF5 file before constructing the solver_t object.
             //
             //! @param filename Path to a HDF5 containing the cost function.
-            //! @param hamiltonian Callable for evaluating the Hamiltonian.
             //! @param vertices The limits of the grid.
-            //! @param viscosity Callable for evaluating the viscosity
-            //!                  coefficients.
             //! @param params Numerical parameters.
             solver_t(
                 std::string const& filename,
@@ -97,6 +94,10 @@ namespace marlin
 
             //! Initializes and solves the problem instance, and writes the
             //! solution to disk.
+            //
+            //! @param hamiltonian Callable for evaluating the Hamiltonian.
+            //! @param viscosity Callable for evaluating the viscosity
+            //!                  coefficients.
             template<typename Hamiltonian, typename Viscosity>
             void solve(Hamiltonian const& hamiltonian,
                        Viscosity const& viscosity);
@@ -214,7 +215,7 @@ namespace marlin
             }
 
             inline scalar_t scale(vector_t const& viscosity,
-                                         vector_t const& h) noexcept
+                                  vector_t const& h) noexcept
             {
                 return scalar_t{ 1.0 } /
                        std::inner_product(std::begin(viscosity),
