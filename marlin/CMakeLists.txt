@@ -8,8 +8,6 @@ add_library(
         marlin
         src/solver.cpp
         src/solver_internals.cpp
-        src/grid.cpp
-        src/data.cpp
         src/io.cpp
 )
 

@@ -74,7 +74,7 @@ namespace marlin
                                                  dataspace.size());
             dataset.read(adapter);
 
-            auto data = data::data_t(dataspace.size(), std::move(raw_data));
+            auto data = data_t(dataspace.size(), std::move(raw_data));
 
             std::cout << "Successfully read dataset \'" + dsetname + "\'."
                       << '\n';
@@ -97,7 +97,7 @@ namespace marlin
 
         void write(std::string const& filename,
                    std::string const& dsetname,
-                   data::data_t const& data,
+                   data_t const& data,
                    point_t const& size)
         {
             auto f =

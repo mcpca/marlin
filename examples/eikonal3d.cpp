@@ -25,12 +25,11 @@ int main()
     params.tolerance = 1.0e-4;
     params.maxval = 2.0;
 
-    marlin::solver::solver_t s(
-        "../data/eikonal3d.h5", h, vertices, viscosity, params);
+    marlin::solver::solver_t s("../data/eikonal3d.h5", vertices, params);
 
     timer::timer_t t;
 
-    s.solve();
+    s.solve(h, viscosity);
 
     std::cout << "Took " << t.get_elapsed_sec<double>() << " seconds."
               << std::endl;
