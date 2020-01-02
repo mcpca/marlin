@@ -92,8 +92,7 @@ namespace marlin
             //! Compiler-generated destructor.
             ~solver_t();
 
-            //! Initializes and solves the problem instance, and writes the
-            //! solution to disk.
+            //! Solves the problem instance.
             //
             //! @param hamiltonian Callable for evaluating the Hamiltonian.
             //! @param viscosity Callable for evaluating the viscosity
@@ -102,6 +101,7 @@ namespace marlin
             void solve(Hamiltonian const& hamiltonian,
                        Viscosity const& viscosity);
 
+            //! Writes the solution to disk.
             void write() const;
 
           private:
