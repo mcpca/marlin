@@ -33,6 +33,9 @@ int main()
 
     std::cout << "Took " << t.get_elapsed_sec<double>() << " seconds."
               << std::endl;
+
+    s.write();
+
 #endif
     return 0;
 }

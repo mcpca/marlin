@@ -48,6 +48,8 @@ int main(int argc, char** argv)
     std::cout << "Took " << t.get_elapsed_sec<double>() << " seconds."
               << std::endl;
 
+    s.write();
+
 #else
     (void)argc;
     (void)argv;

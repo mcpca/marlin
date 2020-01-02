@@ -127,6 +127,7 @@ namespace marlin
 
         void solver_t::write() const
         {
+            std::cout << "Writing to " << m_filename << "..." << std::endl;
             io::write(m_filename, "value_function", m_soln, m_grid.size());
         }
     }    // namespace solver

@@ -102,6 +102,8 @@ namespace marlin
             void solve(Hamiltonian const& hamiltonian,
                        Viscosity const& viscosity);
 
+            void write() const;
+
           private:
             //! @brief Factory function.
             //
@@ -129,8 +131,6 @@ namespace marlin
             template<typename Hamiltonian, typename Viscosity>
             bool iterate(Hamiltonian const& hamiltonian,
                          Viscosity const& viscosity);
-
-            void write() const;
 
             // Sweeps all gridpoints in the direction dir.
             template<typename Hamiltonian, typename Viscosity>
@@ -245,9 +245,7 @@ namespace marlin
                 MARLIN_DEBUG(std::cerr << "Iteration " << niter++ << ":\n";)
             }
 
-            std::cout << "Done. Writing to " << m_filename << "..."
-                      << std::endl;
-            write();
+            std::cout << "Done." << std::endl;
         }
 
         template<typename Hamiltonian, typename Viscosity>
