@@ -46,8 +46,6 @@
 #    define MARLIN_DEBUG(x) x
 #endif
 
-class ThreadPool;
-
 namespace marlin
 {
     using grid_t = grid::grid_t<dim, index_t, scalar_t>;
