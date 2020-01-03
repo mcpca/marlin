@@ -114,9 +114,9 @@ namespace marlin
 
             // Constructs a solver_t object after the relevant info has been
             // read from the HDF5 file.
-            solver_t(std::string const& filename,
+            solver_t(std::string filename,
                      data_t cost,
-                     grid_t const& grid,
+                     grid_t grid,
                      params_t const& params) noexcept;
 
             // Initialize the solution.

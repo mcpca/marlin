@@ -66,12 +66,12 @@ namespace marlin
             : solver_t(make_solver(filename, vertices, params))
         {}
 
-        solver_t::solver_t(std::string const& filename,
+        solver_t::solver_t(std::string filename,
                            data_t cost,
-                           grid_t const& grid,
+                           grid_t grid,
                            params_t const& params) noexcept
-            : m_filename(filename),
-              m_grid(grid),
+            : m_filename(std::move(filename)),
+              m_grid(std::move(grid)),
               m_soln(m_grid.npts(), params.maxval),
               m_cost(std::move(cost)),
               m_tolerance(params.tolerance),
