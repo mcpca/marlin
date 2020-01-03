@@ -141,6 +141,8 @@ namespace marlin
             // Updates the boundary points.
             scalar_t boundary() noexcept;
 
+            scalar_t boundary_sweep(index_t boundary) noexcept;
+
             // Updates a group of points.
             template<typename Hamiltonian, typename Viscosity>
             scalar_t update_points(int dir,

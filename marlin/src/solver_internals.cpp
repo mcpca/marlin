@@ -55,25 +55,44 @@ namespace marlin
             return std::min(std::max(2 * outer - inner, inner), soln.at(index));
         }
 
+        scalar_t solver_t::boundary_sweep(index_t boundary) noexcept
+        {
+            assert(boundary < n_boundaries);
+
+            auto const size = m_grid.npts();
+
+            auto diff = scalar_t{ 0 };
+
+            for(auto i = m_grid.next_in_boundary(size, boundary); i != size;
+                i = m_grid.next_in_boundary(i, boundary))
+            {
+                if(m_cost.at(i) > scalar_t{ 0.0 })
+                {
+                    auto old = m_soln.at(i);
+                    m_soln.at(i) = std::min(
+                        update_boundary(i, boundary, m_soln, m_grid), old);
+
+                    diff = std::max(diff, old - m_soln.at(i));
+                }
+            }
+
+            return diff;
+        }
+
         scalar_t solver_t::boundary() noexcept
         {
             scalar_t diff = 0;
-            auto const size = m_grid.npts();
 
-            for(index_t bdry = 0; bdry < n_boundaries; ++bdry)
+            for(index_t bdry = 0; bdry < dim; ++bdry)
             {
-                for(auto i = m_grid.next_in_boundary(size, bdry); i != size;
-                    i = m_grid.next_in_boundary(i, bdry))
-                {
-                    if(m_cost.at(i) > scalar_t{ 0.0 })
-                    {
-                        auto old = m_soln.at(i);
-                        m_soln.at(i) = std::min(
-                            update_boundary(i, bdry, m_soln, m_grid), old);
-                        diff = std::max(diff, old - m_soln.at(i));
-                    }
-                }
+                auto future_delta =
+                    m_pool->enqueue(&solver_t::boundary_sweep, this, bdry);
+
+                auto my_delta = boundary_sweep(bdry + dim);
+
+                diff = std::max(diff, std::max(my_delta, future_delta.get()));
             }
+
             return diff;
         }
     }    // namespace solver
