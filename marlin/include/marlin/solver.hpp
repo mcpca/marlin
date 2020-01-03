@@ -97,7 +97,7 @@ namespace marlin
             //!                  coefficients.
             template<typename Hamiltonian, typename Viscosity>
             void solve(Hamiltonian const& hamiltonian,
-                       Viscosity const& viscosity);
+                       Viscosity const& viscosity) noexcept;
 
             //! Writes the solution to disk.
             void write() const;
@@ -117,18 +117,18 @@ namespace marlin
             solver_t(std::string const& filename,
                      data_t cost,
                      grid_t const& grid,
-                     params_t const& params);
+                     params_t const& params) noexcept;
 
             // Initialize the solution.
-            void initialize();
+            void initialize() noexcept;
 
             // Fill m_levels.
-            void compute_levels();
+            void compute_levels() noexcept;
 
             // Main loop.
             template<typename Hamiltonian, typename Viscosity>
             bool iterate(Hamiltonian const& hamiltonian,
-                         Viscosity const& viscosity);
+                         Viscosity const& viscosity) noexcept;
 
             // Sweeps all gridpoints in the direction dir.
             template<typename Hamiltonian, typename Viscosity>
@@ -230,7 +230,7 @@ namespace marlin
 
         template<typename Hamiltonian, typename Viscosity>
         void solver_t::solve(Hamiltonian const& hamiltonian,
-                             Viscosity const& viscosity)
+                             Viscosity const& viscosity) noexcept
         {
             std::cout << "Solving (" << n_workers << " threads)..."
                       << std::endl;
@@ -248,7 +248,7 @@ namespace marlin
 
         template<typename Hamiltonian, typename Viscosity>
         bool solver_t::iterate(Hamiltonian const& hamiltonian,
-                               Viscosity const& viscosity)
+                               Viscosity const& viscosity) noexcept
         {
             for(auto dir = 0; dir < n_sweeps; ++dir)
             {

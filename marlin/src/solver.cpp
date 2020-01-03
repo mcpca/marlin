@@ -69,7 +69,7 @@ namespace marlin
         solver_t::solver_t(std::string const& filename,
                            data_t cost,
                            grid_t const& grid,
-                           params_t const& params)
+                           params_t const& params) noexcept
             : m_filename(filename),
               m_grid(grid),
               m_soln(m_grid.npts(), params.maxval),
@@ -81,7 +81,7 @@ namespace marlin
             initialize();
         }
 
-        void solver_t::compute_levels()
+        void solver_t::compute_levels() noexcept
         {
             for(index_t i = 0; i < m_grid.n_levels(); ++i)
             {
@@ -107,7 +107,7 @@ namespace marlin
             }
         }
 
-        void solver_t::initialize()
+        void solver_t::initialize() noexcept
         {
             MARLIN_DEBUG(auto ntargetpts = 0;)
 
