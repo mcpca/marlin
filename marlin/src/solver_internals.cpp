@@ -85,12 +85,20 @@ namespace marlin
 
             for(index_t bdry = 0; bdry < dim; ++bdry)
             {
-                auto future_delta =
-                    m_pool->enqueue(&solver_t::boundary_sweep, this, bdry);
+                scalar_t diffs[2];
 
-                auto my_delta = boundary_sweep(bdry + dim);
+#pragma omp parallel shared(diffs)
+                {
+#pragma omp sections
+                    {
+#pragma omp section
+                        diffs[0] = boundary_sweep(bdry);
+#pragma omp section
+                        diffs[1] = boundary_sweep(bdry + dim);
+                    }
+                }
 
-                diff = std::max(diff, std::max(my_delta, future_delta.get()));
+                diff = std::max(diff, std::max(diffs[0], diffs[1]));
             }
 
             return diff;

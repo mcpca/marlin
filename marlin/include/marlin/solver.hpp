@@ -33,12 +33,12 @@
 #include <string>
 #include <vector>
 
+#include <omp.h>
+
 #include "defs.hpp"
 
 #include "data.hpp"
 #include "grid.hpp"
-
-#include "ThreadPool/ThreadPool.h"
 
 #if defined(NDEBUG) and not defined(MARLIN_PRINT_DEBUG_MSGS)
 #    define MARLIN_DEBUG(x) ;
@@ -143,12 +143,10 @@ namespace marlin
 
             // Updates a group of points.
             template<typename Hamiltonian, typename Viscosity>
-            scalar_t update_points(int dir,
-                                   int start,
-                                   int end,
-                                   std::vector<point_t> const& points,
-                                   Hamiltonian const& hamiltonian,
-                                   Viscosity const& viscosity) noexcept;
+            scalar_t update_point(int dir,
+                                  point_t point,
+                                  Hamiltonian const& hamiltonian,
+                                  Viscosity const& viscosity) noexcept;
 
             // Path to a HDF5 file containing the cost function.
             std::string m_filename;
@@ -159,9 +157,6 @@ namespace marlin
 
             // Tolerance for the convergence criterion.
             scalar_t m_tolerance;
-
-            // Thread pool.
-            std::unique_ptr<ThreadPool> m_pool;
 
             // Caches the sets of points which can be updated in parallel in
             // each sweep.
@@ -232,7 +227,7 @@ namespace marlin
         void solver_t::solve(Hamiltonian const& hamiltonian,
                              Viscosity const& viscosity) noexcept
         {
-            std::cout << "Solving (" << n_workers << " threads)..."
+            std::cout << "Solving (" << omp_get_max_threads() << " threads)..."
                       << std::endl;
 
             MARLIN_DEBUG(auto niter = 0;
@@ -282,43 +277,22 @@ namespace marlin
 
             for(auto const& level : m_levels)
             {
-                std::vector<std::future<scalar_t>> results;
-                results.reserve(n_workers - 1);
+                std::vector<scalar_t> delta(level.size());
 
-                auto block_size = level.size() / n_workers;
-                auto start = 0;
-
-                for(auto i = 0; i < n_workers - 1; ++i)
+#pragma omp parallel default(none) \
+    shared(delta, level, dir, hamiltonian, viscosity)
                 {
-                    results.emplace_back(m_pool->enqueue([this,
-                                                          dir,
-                                                          start,
-                                                          block_size,
-                                                          &level,
-                                                          &hamiltonian,
-                                                          &viscosity] {
-                        return update_points(dir,
-                                             start,
-                                             start + block_size,
-                                             level,
-                                             hamiltonian,
-                                             viscosity);
-                    }));
-                    start += block_size;
+#pragma omp for schedule(static) nowait
+                    for(auto i = 0ul; i < level.size(); ++i)
+                    {
+                        delta[i] =
+                            update_point(dir, level[i], hamiltonian, viscosity);
+                    }
                 }
 
-                // Update remaining points
-                diff = std::max(diff,
-                                update_points(dir,
-                                              start,
-                                              level.size(),
-                                              level,
-                                              hamiltonian,
-                                              viscosity));
-
-                for(auto& r : results)
+                for(auto v : delta)
                 {
-                    diff = std::max(diff, r.get());
+                    diff = std::max(diff, v);
                 }
             }
 
@@ -326,65 +300,50 @@ namespace marlin
         }
 
         template<typename Hamiltonian, typename Viscosity>
-        scalar_t solver_t::update_points(int dir,
-                                         int start,
-                                         int end,
-                                         std::vector<point_t> const& points,
-                                         Hamiltonian const& hamiltonian,
-                                         Viscosity const& viscosity) noexcept
+        scalar_t solver_t::update_point(int dir,
+                                        point_t point,
+                                        Hamiltonian const& hamiltonian,
+                                        Viscosity const& viscosity) noexcept
         {
             assert(dir >= 0);
             assert(dir < n_sweeps);
-            assert(start >= 0);
-            assert(static_cast<size_t>(start) < points.size());
 
-            assert(end >= 0);
-            assert(static_cast<size_t>(end) <= points.size());
-            assert(start <= end);
+            point = m_grid.rotate_axes(point, dir);
+            auto const index = m_grid.index(point);
 
-            scalar_t diff = 0;
-
-            for(auto j = start; j < end; ++j)
+            if(m_cost.at(index) < 0.0)
             {
-                auto point = m_grid.rotate_axes(points[j], dir);
-                auto const index = m_grid.index(point);
-
-                if(m_cost.at(index) < 0.0)
-                {
-                    continue;
-                }
-
-                auto const data = detail::estimate_p(point, m_soln, m_grid);
-                auto const old = m_soln.at(index);
-
-#ifdef MARLIN_USE_ROWMAJOR
-                auto const sigma = viscosity(index);
-                auto const scale_ = detail::scale(sigma, m_grid.h());
-
-                m_soln.at(index) =
-                    std::min(detail::update(hamiltonian(index, data.p),
-                                            scale_,
-                                            m_cost.at(index),
-                                            data.avgs,
-                                            sigma),
-                             old);
-#else
-                auto const sigma = viscosity(point);
-                auto const scale_ = detail::scale(sigma, m_grid.h());
-
-                m_soln.at(index) =
-                    std::min(detail::update(hamiltonian(point, data.p),
-                                            scale_,
-                                            m_cost.at(index),
-                                            data.avgs,
-                                            sigma),
-                             old);
-#endif
-
-                diff = std::max(diff, old - m_soln.at(index));
+                return 0.0;
             }
 
-            return diff;
+            auto const data = detail::estimate_p(point, m_soln, m_grid);
+            auto const old = m_soln.at(index);
+
+#ifdef MARLIN_USE_ROWMAJOR
+            auto const sigma = viscosity(index);
+            auto const scale_ = detail::scale(sigma, m_grid.h());
+
+            m_soln.at(index) =
+                std::min(detail::update(hamiltonian(index, data.p),
+                                        scale_,
+                                        m_cost.at(index),
+                                        data.avgs,
+                                        sigma),
+                         old);
+#else
+            auto const sigma = viscosity(point);
+            auto const scale_ = detail::scale(sigma, m_grid.h());
+
+            m_soln.at(index) =
+                std::min(detail::update(hamiltonian(point, data.p),
+                                        scale_,
+                                        m_cost.at(index),
+                                        data.avgs,
+                                        sigma),
+                         old);
+#endif
+
+            return old - m_soln.at(index);
         }
     }    // namespace solver
 }    // namespace marlin

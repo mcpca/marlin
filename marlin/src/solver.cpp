@@ -74,8 +74,7 @@ namespace marlin
               m_grid(std::move(grid)),
               m_soln(m_grid.npts(), params.maxval),
               m_cost(std::move(cost)),
-              m_tolerance(params.tolerance),
-              m_pool(std::make_unique<ThreadPool>(n_workers - 1))
+              m_tolerance(params.tolerance)
         {
             compute_levels();
             initialize();
