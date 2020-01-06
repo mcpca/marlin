@@ -186,7 +186,7 @@ namespace marlin
             std::vector<scalar_t> deltas(bdry_idxs.size());
 
 #pragma omp parallel default(none) \
-    shared(boundary, bdry_idxs, end_bdry, deltas, m_grid, m_cost, m_soln)
+    shared(boundary, bdry_idxs, end_bdry, deltas)
 #pragma omp for schedule(static) nowait
             for(size_t i = 0; i < bdry_idxs.size(); ++i)
             {
