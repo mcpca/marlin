@@ -77,6 +77,7 @@ namespace marlin
               m_tolerance(params.tolerance)
         {
             compute_levels();
+            compute_bdry_idxs();
             initialize();
         }
 
@@ -103,6 +104,26 @@ namespace marlin
                 {
                     m_levels.emplace_back(std::move(points));
                 }
+            }
+        }
+
+        void solver_t::compute_bdry_idxs() noexcept
+        {
+            for(auto dim_ = 0; dim_ < dim; ++dim_)
+            {
+                auto size = m_grid.size();
+                size[dim_] = index_t{ 1 };
+
+                m_bdry_idxs[dim_].reserve(std::accumulate(std::cbegin(size),
+                                                          std::cend(size),
+                                                          index_t{ 1 },
+                                                          std::multiplies<>()));
+
+                auto npts = m_grid.npts();
+
+                for(auto i = m_grid.next_in_boundary(npts, dim_); i != npts;
+                    i = m_grid.next_in_boundary(i, dim_))
+                    m_bdry_idxs[dim_].emplace_back(i);
             }
         }
 
@@ -156,46 +177,52 @@ namespace marlin
         {
             assert(boundary < n_boundaries);
 
-            auto const size = m_grid.npts();
+            auto const end_bdry = boundary >= dim;
+            if(end_bdry)
+                boundary -= dim;
 
-            auto diff = scalar_t{ 0 };
+            auto const& bdry_idxs = m_bdry_idxs[boundary];
 
-            for(auto i = m_grid.next_in_boundary(size, boundary); i != size;
-                i = m_grid.next_in_boundary(i, boundary))
+            std::vector<scalar_t> deltas(bdry_idxs.size());
+
+#pragma omp parallel default(none) \
+    shared(boundary, bdry_idxs, end_bdry, deltas, m_grid, m_cost, m_soln)
+#pragma omp for schedule(static) nowait
+            for(size_t i = 0; i < bdry_idxs.size(); ++i)
             {
-                if(m_cost.at(i) > scalar_t{ 0.0 })
+                auto index = bdry_idxs[i];
+                if(end_bdry)
                 {
-                    auto old = m_soln.at(i);
-                    m_soln.at(i) = std::min(
-                        update_boundary(i, boundary, m_soln, m_grid), old);
-
-                    diff = std::max(diff, old - m_soln.at(i));
+                    auto point = m_grid.point(bdry_idxs[i]);
+                    point[boundary] = m_grid.size(boundary) - 1;
+                    index = m_grid.index(point);
                 }
+
+                if(m_cost.at(index) <= scalar_t{ 0.0 })
+                    continue;
+
+                auto old = m_soln.at(index);
+
+                m_soln.at(index) = std::min(
+                    update_boundary(index,
+                                    end_bdry ? boundary + dim : boundary,
+                                    m_soln,
+                                    m_grid),
+                    old);
+
+                deltas[i] = old - m_soln.at(index);
             }
 
-            return diff;
+            return *std::max_element(std::cbegin(deltas), std::cend(deltas));
         }
 
         scalar_t solver_t::boundary() noexcept
         {
             scalar_t diff = 0;
 
-            for(index_t bdry = 0; bdry < dim; ++bdry)
+            for(index_t bdry = 0; bdry < n_boundaries; ++bdry)
             {
-                scalar_t diffs[2];
-
-#pragma omp parallel shared(diffs)
-                {
-#pragma omp sections
-                    {
-#pragma omp section
-                        diffs[0] = boundary_sweep(bdry);
-#pragma omp section
-                        diffs[1] = boundary_sweep(bdry + dim);
-                    }
-                }
-
-                diff = std::max(diff, std::max(diffs[0], diffs[1]));
+                diff = std::max(diff, boundary_sweep(bdry));
             }
 
             return diff;

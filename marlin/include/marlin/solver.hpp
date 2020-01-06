@@ -125,6 +125,9 @@ namespace marlin
             // Fill m_levels.
             void compute_levels() noexcept;
 
+            // Fill m_bdry_idxs.
+            void compute_bdry_idxs() noexcept;
+
             // Main loop.
             template<typename Hamiltonian, typename Viscosity>
             bool iterate(Hamiltonian const& hamiltonian,
@@ -161,6 +164,9 @@ namespace marlin
             // Caches the sets of points which can be updated in parallel in
             // each sweep.
             std::vector<std::vector<point_t>> m_levels;
+
+            // Caches the indexes of the boundary points in each dimension.
+            std::array<std::vector<index_t>, dim> m_bdry_idxs;
         };
 
         namespace detail
