@@ -129,5 +129,76 @@ namespace marlin
             std::cout << "Writing to " << m_filename << "..." << std::endl;
             io::write(m_filename, "value_function", m_soln, m_grid.size());
         }
+
+        static inline scalar_t update_boundary(index_t index,
+                                               index_t boundary,
+                                               data_t const& soln,
+                                               grid_t const& grid) noexcept
+        {
+            assert(boundary < n_boundaries);
+            assert(index < grid.npts());
+
+            auto neighbor = grid.point(index);
+            auto const boundary_dim =
+                boundary >= dim ? boundary - dim : boundary;
+
+            // Approximate based on the two points in a line orthogonal
+            // to the boundary closest to the current point.
+            neighbor[boundary_dim] += boundary >= dim ? -1 : +1;
+            auto const outer = soln.at(grid.index(neighbor));
+            neighbor[boundary_dim] += boundary >= dim ? -1 : +1;
+            auto const inner = soln.at(grid.index(neighbor));
+
+            return std::min(std::max(2 * outer - inner, inner), soln.at(index));
+        }
+
+        scalar_t solver_t::boundary_sweep(index_t boundary) noexcept
+        {
+            assert(boundary < n_boundaries);
+
+            auto const size = m_grid.npts();
+
+            auto diff = scalar_t{ 0 };
+
+            for(auto i = m_grid.next_in_boundary(size, boundary); i != size;
+                i = m_grid.next_in_boundary(i, boundary))
+            {
+                if(m_cost.at(i) > scalar_t{ 0.0 })
+                {
+                    auto old = m_soln.at(i);
+                    m_soln.at(i) = std::min(
+                        update_boundary(i, boundary, m_soln, m_grid), old);
+
+                    diff = std::max(diff, old - m_soln.at(i));
+                }
+            }
+
+            return diff;
+        }
+
+        scalar_t solver_t::boundary() noexcept
+        {
+            scalar_t diff = 0;
+
+            for(index_t bdry = 0; bdry < dim; ++bdry)
+            {
+                scalar_t diffs[2];
+
+#pragma omp parallel shared(diffs)
+                {
+#pragma omp sections
+                    {
+#pragma omp section
+                        diffs[0] = boundary_sweep(bdry);
+#pragma omp section
+                        diffs[1] = boundary_sweep(bdry + dim);
+                    }
+                }
+
+                diff = std::max(diff, std::max(diffs[0], diffs[1]));
+            }
+
+            return diff;
+        }
     }    // namespace solver
 }    // namespace marlin

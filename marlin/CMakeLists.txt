@@ -3,7 +3,7 @@ find_package(OpenMP REQUIRED)
 
 include(cmake/Compiler.cmake)
 
-add_library(marlin src/solver.cpp src/solver_internals.cpp src/io.cpp)
+add_library(marlin src/solver.cpp src/io.cpp)
 
 target_compile_features(marlin PUBLIC cxx_std_14)
 
