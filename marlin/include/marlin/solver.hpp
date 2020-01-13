@@ -26,10 +26,7 @@
 #pragma once
 
 #include <array>
-#include <functional>
-#include <future>
 #include <iostream>
-#include <memory>
 #include <string>
 #include <vector>
 
