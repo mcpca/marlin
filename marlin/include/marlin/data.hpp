@@ -46,7 +46,7 @@ namespace marlin
             //! @brief Construct from preexisting data.
             //
             //! @param memsize number of datapoints.
-            //! @param values unique_ptr holding the data.
+            //! @param values data array.
             explicit data_t(std::vector<scalar_t>&& values) noexcept
                 : m_values(std::move(values)), m_memsize(m_values.size())
             {}

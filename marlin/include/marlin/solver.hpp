@@ -73,6 +73,9 @@ namespace marlin
             //! factory function, which makes it easier to read the data in the
             //! HDF5 file before constructing the solver_t object.
             //
+            //! @param rhs Values of the right-hand side of the equation over
+            //! the grid, stored in row-major order.
+            //! @param dimensions Grid dimensions.
             //! @param vertices The limits of the grid.
             //! @param params Numerical parameters.
             solver_t(
@@ -98,6 +101,9 @@ namespace marlin
                        Viscosity const& viscosity) noexcept;
 
             //! Extract the solution.
+            //
+            //! This moves the solution out of the solver object, so the solver
+            //! object should not be used after calling this function.
             std::vector<scalar_t>&& steal() noexcept;
 
           private:
@@ -124,9 +130,10 @@ namespace marlin
             // Updates the boundary points.
             scalar_t boundary() noexcept;
 
+            // Updates a single boundary.
             scalar_t boundary_sweep(index_t boundary) noexcept;
 
-            // Updates a group of points.
+            // Updates one point.
             template<typename Hamiltonian, typename Viscosity>
             scalar_t update_point(int dir,
                                   point_t point,
