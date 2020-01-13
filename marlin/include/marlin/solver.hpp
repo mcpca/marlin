@@ -162,8 +162,8 @@ namespace marlin
             // each sweep.
             std::vector<std::vector<point_t>> m_levels;
 
-            // Caches the indexes of the boundary points in each dimension.
-            std::array<std::vector<index_t>, dim> m_bdry_idxs;
+            // Caches the indexes of the points in each boundary.
+            std::array<std::vector<index_t>, n_boundaries> m_bdry_idxs;
         };
 
         namespace detail
@@ -315,9 +315,9 @@ namespace marlin
             index_t const index = m_grid.index(point);
             scalar_t const cost = m_cost.at(index);
 
-            if(cost < scalar_t{0.0})
+            if(cost < scalar_t{ 0.0 })
             {
-                return scalar_t{0.0};
+                return scalar_t{ 0.0 };
             }
 
             auto const data = detail::estimate_p(point, m_soln, m_grid);

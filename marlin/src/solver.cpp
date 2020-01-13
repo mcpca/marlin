@@ -109,21 +109,36 @@ namespace marlin
 
         void solver_t::compute_bdry_idxs() noexcept
         {
-            for(auto dim_ = 0; dim_ < dim; ++dim_)
+            for(int bd = 0; bd < n_boundaries; ++bd)
             {
+                int const boundary_dim = bd >= dim ? bd - dim : bd;
+
                 auto size = m_grid.size();
-                size[dim_] = index_t{ 1 };
+                size[boundary_dim] = index_t{ 1 };
 
-                m_bdry_idxs[dim_].reserve(std::accumulate(std::cbegin(size),
-                                                          std::cend(size),
-                                                          index_t{ 1 },
-                                                          std::multiplies<>()));
+                m_bdry_idxs[bd].reserve(std::accumulate(std::cbegin(size),
+                                                        std::cend(size),
+                                                        index_t{ 1 },
+                                                        std::multiplies<>()));
 
-                auto npts = m_grid.npts();
+                auto const npts = m_grid.npts();
 
-                for(auto i = m_grid.next_in_boundary(npts, dim_); i != npts;
-                    i = m_grid.next_in_boundary(i, dim_))
-                    m_bdry_idxs[dim_].emplace_back(i);
+                for(auto i = m_grid.next_in_boundary(npts, boundary_dim);
+                    i != npts;
+                    i = m_grid.next_in_boundary(i, boundary_dim))
+                {
+                    auto index = i;
+
+                    if(bd >= dim)
+                    {
+                        point_t point = m_grid.point(i);
+                        point[boundary_dim] = m_grid.size(boundary_dim) - 1;
+                        index = m_grid.index(point);
+                    }
+
+                    if(m_cost.at(index) > scalar_t{ 0.0 })
+                        m_bdry_idxs[bd].emplace_back(index);
+                }
             }
         }
 
@@ -177,40 +192,21 @@ namespace marlin
         {
             assert(boundary < n_boundaries);
 
-            auto const end_bdry = boundary >= dim;
-            if(end_bdry)
-                boundary -= dim;
-
             auto const& bdry_idxs = m_bdry_idxs[boundary];
 
             std::vector<scalar_t> deltas(bdry_idxs.size());
 
-#pragma omp parallel default(none) \
-    shared(boundary, bdry_idxs, end_bdry, deltas)
+#pragma omp parallel default(none) shared(boundary, bdry_idxs, deltas)
 #pragma omp for schedule(static) nowait
             for(size_t i = 0; i < bdry_idxs.size(); ++i)
             {
-                auto index = bdry_idxs[i];
-                if(end_bdry)
-                {
-                    auto point = m_grid.point(bdry_idxs[i]);
-                    point[boundary] = m_grid.size(boundary) - 1;
-                    index = m_grid.index(point);
-                }
+                index_t const index = bdry_idxs[i];
+                scalar_t const old = m_soln.at(index);
 
-                if(m_cost.at(index) <= scalar_t{ 0.0 })
-                    continue;
+                scalar_t const new_val = m_soln.at(index) = std::min(
+                    update_boundary(index, boundary, m_soln, m_grid), old);
 
-                auto old = m_soln.at(index);
-
-                m_soln.at(index) = std::min(
-                    update_boundary(index,
-                                    end_bdry ? boundary + dim : boundary,
-                                    m_soln,
-                                    m_grid),
-                    old);
-
-                deltas[i] = old - m_soln.at(index);
+                deltas[i] = old - new_val;
             }
 
             return *std::max_element(std::cbegin(deltas), std::cend(deltas));
