@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <iostream>
 #include <string>
@@ -293,10 +294,9 @@ namespace marlin
                     }
                 }
 
-                for(auto v : delta)
-                {
-                    diff = std::max(diff, v);
-                }
+                diff = std::max(
+                    diff,
+                    *std::max_element(std::cbegin(delta), std::cend(delta)));
             }
 
             return diff;
