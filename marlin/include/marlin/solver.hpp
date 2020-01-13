@@ -312,41 +312,30 @@ namespace marlin
             assert(dir < n_sweeps);
 
             point = m_grid.rotate_axes(point, dir);
-            auto const index = m_grid.index(point);
+            index_t const index = m_grid.index(point);
+            scalar_t const cost = m_cost.at(index);
 
-            if(m_cost.at(index) < 0.0)
+            if(cost < scalar_t{0.0})
             {
-                return 0.0;
+                return scalar_t{0.0};
             }
 
             auto const data = detail::estimate_p(point, m_soln, m_grid);
-            auto const old = m_soln.at(index);
+            scalar_t const old = m_soln.at(index);
 
 #ifdef MARLIN_USE_ROWMAJOR
-            auto const sigma = viscosity(index);
-            auto const scale_ = detail::scale(sigma, m_grid.h());
-
-            m_soln.at(index) =
-                std::min(detail::update(hamiltonian(index, data.p),
-                                        scale_,
-                                        m_cost.at(index),
-                                        data.avgs,
-                                        sigma),
-                         old);
+            vector_t const sigma = viscosity(index);
+            scalar_t const hval = hamiltonian(index, data.p);
 #else
-            auto const sigma = viscosity(point);
-            auto const scale_ = detail::scale(sigma, m_grid.h());
-
-            m_soln.at(index) =
-                std::min(detail::update(hamiltonian(point, data.p),
-                                        scale_,
-                                        m_cost.at(index),
-                                        data.avgs,
-                                        sigma),
-                         old);
+            vector_t const sigma = viscosity(point);
+            scalar_t const hval = hamiltonian(point, data.p);
 #endif
+            scalar_t const scale_ = detail::scale(sigma, m_grid.h());
 
-            return old - m_soln.at(index);
+            scalar_t const new_val = m_soln.at(index) = std::min(
+                detail::update(hval, scale_, cost, data.avgs, sigma), old);
+
+            return old - new_val;
         }
     }    // namespace solver
 }    // namespace marlin
