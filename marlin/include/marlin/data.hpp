@@ -25,9 +25,8 @@
 
 #pragma once
 
-#include <array>
 #include <cassert>
-#include <memory>
+#include <vector>
 
 namespace marlin
 {
@@ -47,21 +46,19 @@ namespace marlin
             //! @brief Construct from preexisting data.
             //
             //! @param memsize number of datapoints.
-            //! @param values unique_ptr holding the data.
-            data_t(index_t memsize, std::unique_ptr<scalar_t[]> values) noexcept
-                : m_memsize(memsize), m_values(std::move(values))
+            //! @param values data array.
+            explicit data_t(std::vector<scalar_t>&& values) noexcept
+                : m_values(std::move(values)), m_memsize(m_values.size())
             {}
 
             //! @brief Allocate new array.
             //
             //! @param memsize number of datapoints.
             //! @param fill value the new array will be filled with.
-            explicit data_t(index_t memsize,
-                            scalar_t fill = scalar_t{ 0 }) noexcept
-                : m_memsize(memsize),
-                  m_values(std::make_unique<scalar_t[]>(m_memsize))
+            data_t(index_t memsize, scalar_t fill = scalar_t{ 0 }) noexcept
+                : m_values(std::vector<scalar_t>(memsize)), m_memsize(memsize)
             {
-                std::fill_n(this->begin(), m_memsize, fill);
+                std::fill(std::begin(m_values), std::end(m_values), fill);
             }
 
             // Disable copying.
@@ -75,11 +72,6 @@ namespace marlin
 
             //! @brief Compiler-generated destructor.
             ~data_t() = default;
-
-            //! Iterator type.
-            using iterator_t = scalar_t*;
-            //! Constant iterator type.
-            using const_iterator_t = scalar_t const*;
 
             //! @brief Read value at an index.
             //
@@ -104,31 +96,22 @@ namespace marlin
             }
 
             //! @brief Get raw pointer to first datapoint.
-            scalar_t* get_values() const noexcept { return m_values.get(); }
+            scalar_t* get_values() const noexcept { return m_values.data(); }
+
+            //! @brief Move data out of the class.
+            std::vector<scalar_t>&& steal() noexcept
+            {
+                return std::move(m_values);
+            }
 
             //! @brief Size of the underlying array.
             index_t size() const noexcept { return m_memsize; }
 
-            //! @brief Iterator to the beggining of the data.
-            iterator_t begin() noexcept { return &m_values[0]; }
-
-            //! @brief Constant iterator to the beggining of the data.
-            const_iterator_t begin() const noexcept { return &m_values[0]; }
-
-            //! @brief Iterator to the end of the data.
-            iterator_t end() noexcept { return &m_values[m_memsize - 1] + 1; }
-
-            //! @brief Constant iterator to the end of the data.
-            const_iterator_t end() const noexcept
-            {
-                return &m_values[m_memsize - 1] + 1;
-            }
-
           private:
-            // Size of the underlying array.
+            // Data.
+            std::vector<scalar_t> m_values;
+            // Number of data points.
             index_t m_memsize;
-            // Pointer to the beggining of the data.
-            std::unique_ptr<scalar_t[]> m_values;
         };
     }    // namespace data
 }    // namespace marlin

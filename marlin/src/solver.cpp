@@ -28,57 +28,30 @@
 
 #include "marlin/solver.hpp"
 
-#include "io.hpp"
 #include "levels.hpp"
 
 namespace marlin
 {
     namespace solver
     {
-        solver_t make_solver(
-            std::string const& filename,
-            std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-            params_t const& params)
-        {
-            auto data = io::read(filename, "cost_function");
-
-            if(io::dset_exists(filename, "value_function"))
-            {
-                throw std::runtime_error(
-                    "A dataset named \'value_function\' already exists in the "
-                    "given file.");
-            }
-
-            return solver_t(filename,
-                            std::move(data.data),
-                            grid_t(vertices, data.size),
-                            params);
-        }
-
-        solver_t::solver_t(solver_t&&) noexcept = default;
-        solver_t& solver_t::operator=(solver_t&&) noexcept = default;
-        solver_t::~solver_t() = default;
-
         solver_t::solver_t(
-            std::string const& filename,
+            std::vector<scalar_t>&& rhs,
+            point_t const& dimensions,
             std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-            params_t const& params)
-            : solver_t(make_solver(filename, vertices, params))
-        {}
-
-        solver_t::solver_t(std::string filename,
-                           data_t cost,
-                           grid_t grid,
-                           params_t const& params) noexcept
-            : m_filename(std::move(filename)),
-              m_grid(std::move(grid)),
+            params_t const& params) noexcept
+            : m_grid(vertices, dimensions),
               m_soln(m_grid.npts(), params.maxval),
-              m_cost(std::move(cost)),
+              m_cost(std::move(rhs)),
               m_tolerance(params.tolerance)
         {
             compute_levels();
             compute_bdry_idxs();
             initialize();
+        }
+
+        std::vector<scalar_t>&& solver_t::steal() noexcept
+        {
+            return m_soln.steal();
         }
 
         void solver_t::compute_levels() noexcept
@@ -158,12 +131,6 @@ namespace marlin
 
             MARLIN_DEBUG(std::cerr << "Found " << ntargetpts
                                    << " target grid points." << '\n';)
-        }
-
-        void solver_t::write() const
-        {
-            std::cout << "Writing to " << m_filename << "..." << std::endl;
-            io::write(m_filename, "value_function", m_soln, m_grid.size());
         }
 
         static inline scalar_t update_boundary(index_t index,
