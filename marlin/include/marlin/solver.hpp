@@ -73,20 +73,20 @@ namespace marlin
             //! factory function, which makes it easier to read the data in the
             //! HDF5 file before constructing the solver_t object.
             //
-            //! @param filename Path to a HDF5 containing the cost function.
             //! @param vertices The limits of the grid.
             //! @param params Numerical parameters.
             solver_t(
-                std::string const& filename,
+                std::vector<scalar_t>&& rhs,
+                point_t const& dimensions,
                 std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-                params_t const& params);
+                params_t const& params) noexcept;
 
             //! Compiler-generated move contructor.
-            solver_t(solver_t&&) noexcept;
+            solver_t(solver_t&&) noexcept = default;
             //! Compiler-generated move assignment.
-            solver_t& operator=(solver_t&&) noexcept;
+            solver_t& operator=(solver_t&&) noexcept = default;
             //! Compiler-generated destructor.
-            ~solver_t();
+            ~solver_t() = default;
 
             //! Solves the problem instance.
             //
@@ -97,26 +97,10 @@ namespace marlin
             void solve(Hamiltonian const& hamiltonian,
                        Viscosity const& viscosity) noexcept;
 
-            //! Writes the solution to disk.
-            void write() const;
+            //! Extract the solution.
+            std::vector<scalar_t>&& steal() noexcept;
 
           private:
-            //! @brief Factory function.
-            //
-            //! Reads and processes the necessary data from the hdf5 file before
-            //! calling a private constructor.
-            friend solver_t make_solver(
-                std::string const& filename,
-                std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-                params_t const& params);
-
-            // Constructs a solver_t object after the relevant info has been
-            // read from the HDF5 file.
-            solver_t(std::string filename,
-                     data_t cost,
-                     grid_t grid,
-                     params_t const& params) noexcept;
-
             // Initialize the solution.
             void initialize() noexcept;
 
@@ -148,9 +132,6 @@ namespace marlin
                                   point_t point,
                                   Hamiltonian const& hamiltonian,
                                   Viscosity const& viscosity) noexcept;
-
-            // Path to a HDF5 file containing the cost function.
-            std::string m_filename;
 
             grid_t m_grid;    // Grid.
             data_t m_soln;    // Solution.

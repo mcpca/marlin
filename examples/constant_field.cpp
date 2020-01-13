@@ -5,11 +5,13 @@
 
 #include "marlin/solver.hpp"
 
+#include "hdf5.hpp"
 #include "timer.hpp"
 
 int main(int argc, char** argv)
 {
 #if MARLIN_N_DIMS == 2
+    constexpr char const* filename = "../data/constant_field.h5";
 
     std::array<std::pair<marlin::scalar_t, marlin::scalar_t>, marlin::dim>
         vertices = { { { -1.0, 1.0 }, { -1.0, 1.0 } } };
@@ -35,11 +37,13 @@ int main(int argc, char** argv)
         };
     };
 
+    auto ds = h5io::read(filename, "cost_function");
+
     marlin::solver::params_t params;
     params.tolerance = 1.0e-4;
     params.maxval = 5.0;
 
-    marlin::solver::solver_t s("../data/constant_field.h5", vertices, params);
+    marlin::solver::solver_t s(std::move(ds.data), ds.size, vertices, params);
 
     timer::timer_t t;
 
@@ -48,7 +52,7 @@ int main(int argc, char** argv)
     std::cout << "Took " << t.get_elapsed_sec<double>() << " seconds."
               << std::endl;
 
-    s.write();
+    h5io::write(filename, "value_function", s.steal(), ds.size);
 
 #else
     (void)argc;
