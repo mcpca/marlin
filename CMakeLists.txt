@@ -7,3 +7,4 @@ project(marlin LANGUAGES CXX C)
 
 add_subdirectory(marlin)
 add_subdirectory(examples)
+add_subdirectory(bench)
