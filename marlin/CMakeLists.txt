@@ -34,5 +34,4 @@ target_include_directories(
 
 target_link_libraries(
   marlin
-  PRIVATE h5cpp
   PUBLIC OpenMP::OpenMP_CXX)
