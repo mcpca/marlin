@@ -27,7 +27,6 @@
 
 #include <algorithm>
 #include <array>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -41,6 +40,7 @@
 #if defined(NDEBUG) and not defined(MARLIN_PRINT_DEBUG_MSGS)
 #    define MARLIN_DEBUG(x) ;
 #else
+#    include <iostream>
 #    define MARLIN_DEBUG(x) x
 #endif
 
@@ -219,9 +219,6 @@ namespace marlin
         void solver_t::solve(Hamiltonian const& hamiltonian,
                              Viscosity const& viscosity) noexcept
         {
-            std::cout << "Solving (" << omp_get_max_threads() << " threads)..."
-                      << std::endl;
-
             MARLIN_DEBUG(auto niter = 0;
                          std::cerr << "Iteration " << niter++ << ":\n";)
 
@@ -229,8 +226,6 @@ namespace marlin
             {
                 MARLIN_DEBUG(std::cerr << "Iteration " << niter++ << ":\n";)
             }
-
-            std::cout << "Done." << std::endl;
         }
 
         template<typename Hamiltonian, typename Viscosity>
