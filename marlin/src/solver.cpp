@@ -161,11 +161,12 @@ namespace marlin
 
             auto const& bdry_idxs = m_bdry_idxs[boundary];
 
-            std::vector<scalar_t> deltas(bdry_idxs.size());
+            size_t const npts = bdry_idxs.size();
+            std::vector<scalar_t> deltas(npts);
 
-#pragma omp parallel default(none) shared(boundary, bdry_idxs, deltas)
+#pragma omp parallel default(none) shared(boundary, npts, bdry_idxs, deltas)
 #pragma omp for schedule(static) nowait
-            for(size_t i = 0; i < bdry_idxs.size(); ++i)
+            for(size_t i = 0; i < npts; ++i)
             {
                 index_t const index = bdry_idxs[i];
                 scalar_t const old = m_soln.at(index);
@@ -176,7 +177,11 @@ namespace marlin
                 deltas[i] = old - new_val;
             }
 
-            return *std::max_element(std::cbegin(deltas), std::cend(deltas));
+            scalar_t delta = 0;
+            for(size_t i = 0; i < npts; ++i)
+                delta = std::max(delta, deltas[i]);
+
+            return delta;
         }
 
         scalar_t solver_t::boundary() noexcept
