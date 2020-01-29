@@ -264,22 +264,23 @@ namespace marlin
 
             for(auto const& level : m_levels)
             {
-                std::vector<scalar_t> delta(level.size());
+                size_t const size = level.size();
+                std::vector<scalar_t> delta(size);
 
 #pragma omp parallel default(none) \
-    shared(delta, level, dir, hamiltonian, viscosity)
+    shared(delta, level, dir, hamiltonian, viscosity, diff)
                 {
 #pragma omp for schedule(static) nowait
-                    for(auto i = 0ul; i < level.size(); ++i)
+                    for(auto i = 0ul; i < size; ++i)
                     {
                         delta[i] =
                             update_point(dir, level[i], hamiltonian, viscosity);
                     }
-                }
 
-                diff = std::max(
-                    diff,
-                    *std::max_element(std::cbegin(delta), std::cend(delta)));
+#pragma omp for schedule(static) reduction(max : diff) nowait
+                    for(size_t i = 0; i < size; ++i)
+                        diff = std::max(delta[i], diff);
+                }
             }
 
             return diff;
@@ -291,9 +292,6 @@ namespace marlin
                                         Hamiltonian const& hamiltonian,
                                         Viscosity const& viscosity) noexcept
         {
-            assert(dir >= 0);
-            assert(dir < n_sweeps);
-
             point = m_grid.rotate_axes(point, dir);
             index_t const index = m_grid.index(point);
             scalar_t const cost = m_cost.at(index);

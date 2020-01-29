@@ -163,23 +163,27 @@ namespace marlin
 
             size_t const npts = bdry_idxs.size();
             std::vector<scalar_t> deltas(npts);
-
-#pragma omp parallel default(none) shared(boundary, npts, bdry_idxs, deltas)
-#pragma omp for schedule(static) nowait
-            for(size_t i = 0; i < npts; ++i)
-            {
-                index_t const index = bdry_idxs[i];
-                scalar_t const old = m_soln.at(index);
-
-                scalar_t const new_val = m_soln.at(index) = std::min(
-                    update_boundary(index, boundary, m_soln, m_grid), old);
-
-                deltas[i] = old - new_val;
-            }
-
             scalar_t delta = 0;
-            for(size_t i = 0; i < npts; ++i)
-                delta = std::max(delta, deltas[i]);
+
+#pragma omp parallel default(none) \
+    shared(boundary, npts, bdry_idxs, deltas, delta)
+            {
+#pragma omp for schedule(static) nowait
+                for(size_t i = 0; i < npts; ++i)
+                {
+                    index_t const index = bdry_idxs[i];
+                    scalar_t const old = m_soln.at(index);
+
+                    scalar_t const new_val = m_soln.at(index) = std::min(
+                        update_boundary(index, boundary, m_soln, m_grid), old);
+
+                    deltas[i] = old - new_val;
+                }
+
+#pragma omp for schedule(static) reduction(max : delta) nowait
+                for(size_t i = 0; i < npts; ++i)
+                    delta = std::max(delta, deltas[i]);
+            }
 
             return delta;
         }
