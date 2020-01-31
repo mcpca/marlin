@@ -30,8 +30,6 @@
 #include <string>
 #include <vector>
 
-#include <omp.h>
-
 #include "defs.hpp"
 
 #include "data.hpp"
