@@ -1,10 +1,10 @@
-find_package(h5cpp)
+find_package(HDF5 COMPONENTS C CXX)
 
-if(h5cpp_FOUND)
+if(HDF5_FOUND)
   add_library(hdf5_helper EXCLUDE_FROM_ALL OBJECT hdf5.cpp)
   target_compile_features(hdf5_helper PRIVATE cxx_std_14)
   target_compile_options(hdf5_helper PRIVATE -Wall -Wextra -pedantic)
-  target_link_libraries(hdf5_helper PUBLIC marlin h5cpp)
+  target_link_libraries(hdf5_helper PUBLIC marlin hdf5 hdf5_cpp)
 
   add_executable(eikonal2d EXCLUDE_FROM_ALL eikonal2d.cpp)
   target_compile_features(eikonal2d PRIVATE cxx_std_14)
