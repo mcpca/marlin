@@ -60,8 +60,6 @@ Examples
 ---
 
 Four examples are included in the `examples` directory.
-You must have the [h5cpp](https://github.com/ess-dmsc/h5cpp) library installed
-in order to build them.
 
 In `examples/scripts` there are Python scripts which set up the problem, call
 the solver and display the results.
