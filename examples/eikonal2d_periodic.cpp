@@ -9,8 +9,8 @@
 
 int main()
 {
-#if MARLIN_N_DIMS == 3
-    constexpr char const* filename = "../data/eikonal3d.h5";
+#if MARLIN_N_DIMS == 2
+    constexpr char const* filename = "../data/eikonal2d_periodic.h5";
 
     auto h = [](auto, auto&& p) -> marlin::scalar_t {
         // Norm of p
@@ -20,9 +20,9 @@ int main()
 
     constexpr std::array<std::pair<marlin::scalar_t, marlin::scalar_t>,
                          marlin::dim>
-        vertices = { { { -1.0, 1.0 }, { -1.0, 1.0 }, { -1.0, 1.0 } } };
+        vertices = { { { -1.0, 1.0 }, { -1.0, 1.0 } } };
 
-    auto viscosity = [](auto) { return marlin::vector_t{ 1.0, 1.0, 1.0 }; };
+    auto viscosity = [](auto const&) { return marlin::vector_t{ 1.0, 1.0 }; };
 
     auto ds = h5io::read(filename, "cost_function");
 
@@ -30,7 +30,17 @@ int main()
     params.tolerance = 1.0e-4;
     params.maxval = 2.0;
 
-    marlin::solver::solver_t s(std::move(ds.data), ds.size, vertices, params);
+    marlin::solver::solver_t s(
+        std::move(ds.data),
+        ds.size,
+        vertices,
+        params,
+        {
+            marlin::solver::boundary_condition_t::periodic,
+            marlin::solver::boundary_condition_t::periodic,
+            marlin::solver::boundary_condition_t::periodic,
+            marlin::solver::boundary_condition_t::periodic,
+        });
 
     timer::timer_t t;
 

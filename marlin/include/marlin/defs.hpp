@@ -33,10 +33,6 @@
 #    define MARLIN_N_DIMS 3
 #endif
 
-#ifndef MARLIN_N_WORKERS
-#    include <thread>
-#endif
-
 namespace marlin
 {
     //! Number of dimensions.
@@ -49,20 +45,6 @@ namespace marlin
     constexpr auto n_sweeps = 1 << dim;
     //! Number of boundaries.
     constexpr auto n_boundaries = 2 * dim;
-
-#ifndef MARLIN_N_WORKERS
-    //! Number of threads.
-    //! If the number of threads is not given, try hardware_concurrency.
-    static int const n_workers = [] {
-        int const hc = std::thread::hardware_concurrency();
-        return hc > 0 ? hc : 2;
-    }();
-#else
-    constexpr auto n_workers = MARLIN_N_WORKERS;
-    static_assert(std::is_integral<decltype(n_workers)>::value,
-                  "Number of workers must be a positive integer.");
-    static_assert(n_workers > 1, "The number of workers must be at least two.");
-#endif
 
     //! Type of the integer indices for indexing into the grid and arrays.
     using index_t = size_t;

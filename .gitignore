@@ -132,3 +132,5 @@ Session.vim
 *~
 tags
 [._]*.un~
+
+docs/*

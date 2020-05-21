@@ -25,11 +25,8 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
-#include <functional>
-#include <future>
-#include <iostream>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -38,11 +35,10 @@
 #include "data.hpp"
 #include "grid.hpp"
 
-#include "ThreadPool/ThreadPool.h"
-
 #if defined(NDEBUG) and not defined(MARLIN_PRINT_DEBUG_MSGS)
 #    define MARLIN_DEBUG(x) ;
 #else
+#    include <iostream>
 #    define MARLIN_DEBUG(x) x
 #endif
 
@@ -53,6 +49,21 @@ namespace marlin
 
     namespace solver
     {
+        //! @brief Implemented boundary conditions types.
+        enum class boundary_condition_t
+        {
+            //! Extrapolate value of solution.
+            extrapolate,
+
+            //! Periodic boundary condition
+            //! The two boundaries along the dimension are identified as the
+            //! same point, and updated as if they were a regular gridpoint.
+            periodic,
+
+            //! Boundary is never updated.
+            none,
+        };
+
         //! @brief Numerical parameters supplied by the user.
         struct params_t
         {
@@ -62,33 +73,55 @@ namespace marlin
             scalar_t tolerance;
         };
 
+        namespace detail
+        {
+            template<index_t N, typename T>
+            constexpr std::array<T, N> make_array(T init)
+            {
+                std::array<T, N> a;
+
+                for(index_t i = 0; i < N; ++i)
+                {
+                    a[i] = init;
+                }
+
+                return a;
+            }
+        }    // namespace detail
+
         //! @brief Solver API.
         //
-        //! The main class, used for defining a problem, solving it and
-        //! writing the solution to disk.
+        //! The main class, used for defining and solving a problem.
         class solver_t
         {
           public:
-            //! Contructs a solver_t object given an HDF5 file and the problem
-            //! data.
-            //! Construction is delegated to the move constructor by calling a
-            //! factory function, which makes it easier to read the data in the
-            //! HDF5 file before constructing the solver_t object.
+            //! Constructs the solver given data for the right-hand-side of the
+            //! equation (\p rhs), the grid sizes and bounds, the initial valu
+            //! of the solution, the convergence parameter, and optionally the
+            //! boundary condition types.
             //
-            //! @param filename Path to a HDF5 containing the cost function.
+            //! @param rhs Values of the right-hand side of the equation over
+            //! the grid, stored in row-major order.
+            //! @param dimensions Grid dimensions.
             //! @param vertices The limits of the grid.
             //! @param params Numerical parameters.
+            //! @param boundary_conditions Boundary condition used for each
+            //! piece of the computational boundary.
             solver_t(
-                std::string const& filename,
+                std::vector<scalar_t>&& rhs,
+                point_t const& dimensions,
                 std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-                params_t const& params);
+                params_t const& params,
+                std::array<boundary_condition_t, n_boundaries> const&
+                    boundary_conditions = detail::make_array<n_boundaries>(
+                        boundary_condition_t::extrapolate));
 
             //! Compiler-generated move contructor.
-            solver_t(solver_t&&) noexcept;
+            solver_t(solver_t&&) noexcept = default;
             //! Compiler-generated move assignment.
-            solver_t& operator=(solver_t&&) noexcept;
+            solver_t& operator=(solver_t&&) noexcept = default;
             //! Compiler-generated destructor.
-            ~solver_t();
+            ~solver_t() = default;
 
             //! Solves the problem instance.
             //
@@ -99,31 +132,21 @@ namespace marlin
             void solve(Hamiltonian const& hamiltonian,
                        Viscosity const& viscosity) noexcept;
 
-            //! Writes the solution to disk.
-            void write() const;
+            //! Extract the solution.
+            //
+            //! This moves the solution out of the solver object, so the solver
+            //! object should not be used after calling this function.
+            std::vector<scalar_t>&& steal() noexcept;
 
           private:
-            //! @brief Factory function.
-            //
-            //! Reads and processes the necessary data from the hdf5 file before
-            //! calling a private constructor.
-            friend solver_t make_solver(
-                std::string const& filename,
-                std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-                params_t const& params);
-
-            // Constructs a solver_t object after the relevant info has been
-            // read from the HDF5 file.
-            solver_t(std::string filename,
-                     data_t cost,
-                     grid_t grid,
-                     params_t const& params) noexcept;
-
             // Initialize the solution.
             void initialize() noexcept;
 
             // Fill m_levels.
             void compute_levels() noexcept;
+
+            // Fill m_bdry_idxs.
+            void compute_bdry_idxs();
 
             // Main loop.
             template<typename Hamiltonian, typename Viscosity>
@@ -137,21 +160,29 @@ namespace marlin
                            Viscosity const& viscosity) noexcept;
 
             // Updates the boundary points.
-            scalar_t boundary() noexcept;
-
-            scalar_t boundary_sweep(index_t boundary) noexcept;
-
-            // Updates a group of points.
             template<typename Hamiltonian, typename Viscosity>
-            scalar_t update_points(int dir,
-                                   int start,
-                                   int end,
-                                   std::vector<point_t> const& points,
-                                   Hamiltonian const& hamiltonian,
-                                   Viscosity const& viscosity) noexcept;
+            scalar_t boundary(Hamiltonian const& hamiltonian,
+                              Viscosity const& viscosity) noexcept;
 
-            // Path to a HDF5 file containing the cost function.
-            std::string m_filename;
+            // Updates a single boundary via extrapolation.
+            scalar_t boundary_sweep_extrapolate(index_t boundary) noexcept;
+
+            // Updates a boundary with a periodic boundary condition.
+            template<typename Hamiltonian, typename Viscosity>
+            scalar_t boundary_sweep_periodic(
+                index_t boundary,
+                Hamiltonian const& hamiltonian,
+                Viscosity const& viscosity) noexcept;
+
+            // Updates one point.
+            template<typename Hamiltonian,
+                     typename Viscosity,
+                     typename GradientEstimator>
+            scalar_t update_point(int dir,
+                                  point_t point,
+                                  Hamiltonian const& hamiltonian,
+                                  Viscosity const& viscosity,
+                                  GradientEstimator const& ge) noexcept;
 
             grid_t m_grid;    // Grid.
             data_t m_soln;    // Solution.
@@ -160,12 +191,15 @@ namespace marlin
             // Tolerance for the convergence criterion.
             scalar_t m_tolerance;
 
-            // Thread pool.
-            std::unique_ptr<ThreadPool> m_pool;
-
             // Caches the sets of points which can be updated in parallel in
             // each sweep.
             std::vector<std::vector<point_t>> m_levels;
+
+            // Caches the indexes of the points in each boundary.
+            std::array<std::vector<index_t>, n_boundaries> m_bdry_idxs;
+
+            // Boundary condition used in each piece of the grid boundary.
+            std::array<boundary_condition_t, n_boundaries> m_bc;
         };
 
         namespace detail
@@ -176,7 +210,7 @@ namespace marlin
                 vector_t avgs;
             };
 
-            inline update_data_internal_t estimate_p(
+            inline update_data_internal_t estimate_p_interior(
                 point_t const& point,
                 data_t const& soln,
                 grid_t const& grid) noexcept
@@ -191,6 +225,37 @@ namespace marlin
                     auto const right = soln.at(grid.index(neighbor));
 
                     neighbor[i] -= 2;
+                    auto const left = soln.at(grid.index(neighbor));
+
+                    res.p[i] = (right - left) / (scalar_t{ 2.0 } * grid.h(i));
+                    res.avgs[i] =
+                        (right + left) / (scalar_t{ 2.0 } * grid.h(i));
+                }
+
+                return res;
+            }
+
+            inline update_data_internal_t estimate_p_boundary(
+                point_t const& point,
+                data_t const& soln,
+                grid_t const& grid) noexcept
+            {
+                update_data_internal_t res;
+
+                for(auto i = 0; i < dim; ++i)
+                {
+                    auto neighbor = point;
+                    auto const original_idx = point[i];
+
+                    neighbor[i] += 1;
+
+                    auto const right = soln.at(grid.index(neighbor));
+
+                    if(original_idx > 0)
+                        neighbor[i] = original_idx - 1;
+                    else
+                        neighbor[i] = grid.size(i) - 2;
+
                     auto const left = soln.at(grid.index(neighbor));
 
                     res.p[i] = (right - left) / (scalar_t{ 2.0 } * grid.h(i));
@@ -232,9 +297,6 @@ namespace marlin
         void solver_t::solve(Hamiltonian const& hamiltonian,
                              Viscosity const& viscosity) noexcept
         {
-            std::cout << "Solving (" << n_workers << " threads)..."
-                      << std::endl;
-
             MARLIN_DEBUG(auto niter = 0;
                          std::cerr << "Iteration " << niter++ << ":\n";)
 
@@ -242,8 +304,6 @@ namespace marlin
             {
                 MARLIN_DEBUG(std::cerr << "Iteration " << niter++ << ":\n";)
             }
-
-            std::cout << "Done." << std::endl;
         }
 
         template<typename Hamiltonian, typename Viscosity>
@@ -257,7 +317,7 @@ namespace marlin
                 diff = sweep(dir, hamiltonian, viscosity);
                 MARLIN_DEBUG(std::cerr << "Sweep " << dir
                                        << ": delta = " << diff << '\n';)
-                diff = std::max(diff, boundary());
+                diff = std::max(diff, boundary(hamiltonian, viscosity));
                 MARLIN_DEBUG(std::cerr << "Sweep " << dir
                                        << " (after boundary): delta = " << diff
                                        << '\n';)
@@ -282,109 +342,130 @@ namespace marlin
 
             for(auto const& level : m_levels)
             {
-                std::vector<std::future<scalar_t>> results;
-                results.reserve(n_workers - 1);
+                size_t const size = level.size();
+                std::vector<scalar_t> delta(size);
 
-                auto block_size = level.size() / n_workers;
-                auto start = 0;
-
-                for(auto i = 0; i < n_workers - 1; ++i)
+#pragma omp parallel default(none) \
+    shared(delta, level, dir, hamiltonian, viscosity, diff, size)
                 {
-                    results.emplace_back(m_pool->enqueue([this,
-                                                          dir,
-                                                          start,
-                                                          block_size,
-                                                          &level,
-                                                          &hamiltonian,
-                                                          &viscosity] {
-                        return update_points(dir,
-                                             start,
-                                             start + block_size,
-                                             level,
-                                             hamiltonian,
-                                             viscosity);
-                    }));
-                    start += block_size;
-                }
+#pragma omp for schedule(static) nowait
+                    for(auto i = 0ul; i < size; ++i)
+                    {
+                        delta[i] = update_point(dir,
+                                                level[i],
+                                                hamiltonian,
+                                                viscosity,
+                                                detail::estimate_p_interior);
+                    }
 
-                // Update remaining points
-                diff = std::max(diff,
-                                update_points(dir,
-                                              start,
-                                              level.size(),
-                                              level,
-                                              hamiltonian,
-                                              viscosity));
-
-                for(auto& r : results)
-                {
-                    diff = std::max(diff, r.get());
+#pragma omp for schedule(static) reduction(max : diff) nowait
+                    for(size_t i = 0; i < size; ++i)
+                        diff = std::max(delta[i], diff);
                 }
             }
 
             return diff;
         }
 
-        template<typename Hamiltonian, typename Viscosity>
-        scalar_t solver_t::update_points(int dir,
-                                         int start,
-                                         int end,
-                                         std::vector<point_t> const& points,
-                                         Hamiltonian const& hamiltonian,
-                                         Viscosity const& viscosity) noexcept
+        template<typename Hamiltonian,
+                 typename Viscosity,
+                 typename GradientEstimator>
+        scalar_t solver_t::update_point(int dir,
+                                        point_t point,
+                                        Hamiltonian const& hamiltonian,
+                                        Viscosity const& viscosity,
+                                        GradientEstimator const& ge) noexcept
         {
-            assert(dir >= 0);
-            assert(dir < n_sweeps);
-            assert(start >= 0);
-            assert(static_cast<size_t>(start) < points.size());
+            point = m_grid.rotate_axes(point, dir);
+            index_t const index = m_grid.index(point);
+            scalar_t const cost = m_cost.at(index);
 
-            assert(end >= 0);
-            assert(static_cast<size_t>(end) <= points.size());
-            assert(start <= end);
-
-            scalar_t diff = 0;
-
-            for(auto j = start; j < end; ++j)
+            if(cost < scalar_t{ 0.0 })
             {
-                auto point = m_grid.rotate_axes(points[j], dir);
-                auto const index = m_grid.index(point);
+                return scalar_t{ 0.0 };
+            }
 
-                if(m_cost.at(index) < 0.0)
-                {
-                    continue;
-                }
+            auto const data = ge(point, m_soln, m_grid);
 
-                auto const data = detail::estimate_p(point, m_soln, m_grid);
-                auto const old = m_soln.at(index);
+            scalar_t const old = m_soln.at(index);
 
 #ifdef MARLIN_USE_ROWMAJOR
-                auto const sigma = viscosity(index);
-                auto const scale_ = detail::scale(sigma, m_grid.h());
-
-                m_soln.at(index) =
-                    std::min(detail::update(hamiltonian(index, data.p),
-                                            scale_,
-                                            m_cost.at(index),
-                                            data.avgs,
-                                            sigma),
-                             old);
+            vector_t const sigma = viscosity(index);
+            scalar_t const hval = hamiltonian(index, data.p);
 #else
-                auto const sigma = viscosity(point);
-                auto const scale_ = detail::scale(sigma, m_grid.h());
-
-                m_soln.at(index) =
-                    std::min(detail::update(hamiltonian(point, data.p),
-                                            scale_,
-                                            m_cost.at(index),
-                                            data.avgs,
-                                            sigma),
-                             old);
+            vector_t const sigma = viscosity(point);
+            scalar_t const hval = hamiltonian(point, data.p);
 #endif
+            scalar_t const scale_ = detail::scale(sigma, m_grid.h());
 
-                diff = std::max(diff, old - m_soln.at(index));
+            scalar_t const new_val = m_soln.at(index) = std::min(
+                detail::update(hval, scale_, cost, data.avgs, sigma), old);
+
+            return old - new_val;
+        }
+
+        template<typename Hamiltonian, typename Viscosity>
+        scalar_t solver_t::boundary(Hamiltonian const& hamiltonian,
+                                    Viscosity const& viscosity) noexcept
+        {
+            scalar_t diff = 0;
+
+            for(index_t bdry = 0; bdry < n_boundaries; ++bdry)
+            {
+                switch(m_bc[bdry])
+                {
+                    case boundary_condition_t::extrapolate:
+                        diff = std::max(diff, boundary_sweep_extrapolate(bdry));
+                        break;
+                    case boundary_condition_t::periodic:
+                        diff = std::max(diff,
+                                        boundary_sweep_periodic(
+                                            bdry, hamiltonian, viscosity));
+                        break;
+                    case boundary_condition_t::none:
+                        break;
+                }
             }
 
             return diff;
+        }
+
+        // Updates a boundary with a periodic boundary condition.
+        template<typename Hamiltonian, typename Viscosity>
+        scalar_t solver_t::boundary_sweep_periodic(
+            index_t boundary,
+            Hamiltonian const& hamiltonian,
+            Viscosity const& viscosity) noexcept
+        {
+            assert(boundary < n_boundaries);
+
+            scalar_t delta = 0.0;
+
+            for(index_t index : m_bdry_idxs[boundary])
+            {
+                auto const point = m_grid.point(index);
+
+                if(boundary < dim)
+                {
+                    delta = std::max(delta,
+                                     update_point(0,
+                                                  point,
+                                                  hamiltonian,
+                                                  viscosity,
+                                                  detail::estimate_p_boundary));
+                }
+                else
+                {
+                    auto opposing_point = point;
+                    opposing_point[boundary - dim] = 0;
+                    m_soln.at(index) = m_soln.at(m_grid.index(opposing_point));
+
+                    // We don't need to keep track of delta in this case, since
+                    // it will be the same as for the opposing boundary.
+                }
+            }
+
+            return delta;
         }
     }    // namespace solver
 }    // namespace marlin

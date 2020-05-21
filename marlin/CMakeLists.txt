@@ -1,10 +1,8 @@
-add_subdirectory(external)
-
-find_package(h5cpp REQUIRED)
+find_package(OpenMP REQUIRED)
 
 include(cmake/Compiler.cmake)
 
-add_library(marlin src/solver.cpp src/solver_internals.cpp src/io.cpp)
+add_library(marlin src/solver.cpp)
 
 target_compile_features(marlin PUBLIC cxx_std_14)
 
@@ -36,5 +34,4 @@ target_include_directories(
 
 target_link_libraries(
   marlin
-  PRIVATE h5cpp
-  PUBLIC thread_pool)
+  PUBLIC OpenMP::OpenMP_CXX)

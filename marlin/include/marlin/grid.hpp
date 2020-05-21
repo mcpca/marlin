@@ -232,11 +232,33 @@ namespace marlin
                 return false;
             }
 
-            //! @brief Get the next point according to sweeping order \p dir.
+            //! @brief Check if a point is in the interior of the computational
+            //! boundary.
+            //
+            //! @param bdry index boundary index
+            //! @param point indices of a gridpoint lying in boundary \p bdry.
+            //! @return true if \p point is in the interior of boundary \p bdry.
+            bool is_boundary_interior(index_t bdry,
+                                      point_t const& point) const noexcept
+            {
+                int const bdry_dim = bdry % dim;
+
+                for(int i = 0; i < dim; ++i)
+                {
+                    if(i != bdry_dim &&
+                       (point[i] == 0 || point[i] == m_size[i] - 1))
+                        return false;
+                }
+
+                return true;
+            }
+
+            //! @brief Get the next point according to sweeping order \p
+            //! dir.
             //
             //! By calling this function repeatedly with the same value of
-            //! \p dir, one can sweep the interior gridpoints in the direction
-            //! given by \p dir.
+            //! \p dir, one can sweep the interior gridpoints in the
+            //! direction given by \p dir.
             //
             //! @param idx row major index of current point.
             //! @param dir sweeping direction.
@@ -296,61 +318,37 @@ namespace marlin
             //! @param idx row major index of current point.
             //! @param boundary boundary identifier.
             //! @return index of the next point.
-            index_t next_in_boundary(index_t idx, index_t boundary) const
-                noexcept
+            index_t next_in_boundary(index_t idx,
+                                     index_t boundary) const noexcept
             {
                 assert(idx <= m_npts);
-                assert(boundary < 2 * dim);
+                assert(boundary < dim);
 
                 if(idx == m_npts)
+                    return index_t{ 0 };
+
+                point_t p = point(idx);
+
+                // Increment from the dimension after the boundary
+                // dimension to the dimension right before.
+                p[rotate<dim>(boundary, 0)] += 1;
+
+                for(auto i = 0; i < dim - 2; ++i)
                 {
-                    point_t p;
-
-                    for(auto i = 0; i < dim; ++i)
+                    if(p[rotate<dim>(boundary, i)] ==
+                       m_size[rotate<dim>(boundary, i)])
                     {
-                        p[i] = 0;
+                        p[rotate<dim>(boundary, i)] = 0;
+                        p[rotate<dim>(boundary, i + 1)] += 1;
                     }
-
-                    if(boundary >= dim)
-                    {
-                        p[boundary - dim] = m_size[boundary - dim] - 1;
-                    }
-
-                    idx = index(p);
                 }
+
+                if(p[rotate<dim>(boundary, dim - 2)] ==
+                   m_size[rotate<dim>(boundary, dim - 2)])
+                    return m_npts;
+
                 else
-                {
-                    point_t p = point(idx);
-
-                    index_t boundary_dim =
-                        boundary >= dim ? boundary - dim : boundary;
-
-                    // Increment from the dimension after the boundary
-                    // dimension to the dimension right before.
-                    p[rotate<dim>(boundary_dim, 0)] += 1;
-
-                    for(auto i = 0; i < dim - 2; ++i)
-                    {
-                        if(p[rotate<dim>(boundary_dim, i)] ==
-                           m_size[rotate<dim>(boundary_dim, i)])
-                        {
-                            p[rotate<dim>(boundary_dim, i)] = 0;
-                            p[rotate<dim>(boundary_dim, i + 1)] += 1;
-                        }
-                    }
-
-                    if(p[rotate<dim>(boundary_dim, dim - 2)] ==
-                       m_size[rotate<dim>(boundary_dim, dim - 2)])
-                    {
-                        idx = m_npts;
-                    }
-                    else
-                    {
-                        idx = index(p);
-                    }
-                }
-
-                return idx;
+                    return index(p);
             }
 
           private:

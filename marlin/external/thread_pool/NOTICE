@@ -1,5 +1,0 @@
-This is not the original source, but a slightly modified version of the original
-which sets the affinity of each thread when using pthreads as the std::thread
-backend.
-
--- Miguel Aguiar (https://github.com/mcpca)
