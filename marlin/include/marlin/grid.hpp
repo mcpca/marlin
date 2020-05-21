@@ -232,11 +232,33 @@ namespace marlin
                 return false;
             }
 
-            //! @brief Get the next point according to sweeping order \p dir.
+            //! @brief Check if a point is in the interior of the computational
+            //! boundary.
+            //
+            //! @param bdry index boundary index
+            //! @param point indices of a gridpoint lying in boundary \p bdry.
+            //! @return true if \p point is in the interior of boundary \p bdry.
+            bool is_boundary_interior(index_t bdry,
+                                      point_t const& point) const noexcept
+            {
+                int const bdry_dim = bdry % dim;
+
+                for(int i = 0; i < dim; ++i)
+                {
+                    if(i != bdry_dim &&
+                       (point[i] == 0 || point[i] == m_size[i] - 1))
+                        return false;
+                }
+
+                return true;
+            }
+
+            //! @brief Get the next point according to sweeping order \p
+            //! dir.
             //
             //! By calling this function repeatedly with the same value of
-            //! \p dir, one can sweep the interior gridpoints in the direction
-            //! given by \p dir.
+            //! \p dir, one can sweep the interior gridpoints in the
+            //! direction given by \p dir.
             //
             //! @param idx row major index of current point.
             //! @param dir sweeping direction.
@@ -296,8 +318,8 @@ namespace marlin
             //! @param idx row major index of current point.
             //! @param boundary boundary identifier.
             //! @return index of the next point.
-            index_t next_in_boundary(index_t idx, index_t boundary) const
-                noexcept
+            index_t next_in_boundary(index_t idx,
+                                     index_t boundary) const noexcept
             {
                 assert(idx <= m_npts);
                 assert(boundary < dim);

@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <stdexcept>
 
 #include "marlin/solver.hpp"
 
@@ -38,11 +39,14 @@ namespace marlin
             std::vector<scalar_t>&& rhs,
             point_t const& dimensions,
             std::array<std::pair<scalar_t, scalar_t>, dim> const& vertices,
-            params_t const& params) noexcept
+            params_t const& params,
+            std::array<boundary_condition_t, n_boundaries> const&
+                boundary_conditions)
             : m_grid(vertices, dimensions),
               m_soln(m_grid.npts(), params.maxval),
               m_cost(std::move(rhs)),
-              m_tolerance(params.tolerance)
+              m_tolerance(params.tolerance),
+              m_bc(boundary_conditions)
         {
             compute_levels();
             compute_bdry_idxs();
@@ -80,7 +84,7 @@ namespace marlin
             }
         }
 
-        void solver_t::compute_bdry_idxs() noexcept
+        void solver_t::compute_bdry_idxs()
         {
             for(int bd = 0; bd < n_boundaries; ++bd)
             {
@@ -109,8 +113,38 @@ namespace marlin
                         index = m_grid.index(point);
                     }
 
+                    // For periodic boundary conditions, only the points in the
+                    // interior of the boundary are updated.
+                    if(m_bc[bd] == boundary_condition_t::periodic &&
+                       !m_grid.is_boundary_interior(bd, m_grid.point(index)))
+                        continue;
+
                     if(m_cost.at(index) > scalar_t{ 0.0 })
                         m_bdry_idxs[bd].emplace_back(index);
+                }
+            }
+
+            for(int bd = 0; bd < dim; ++bd)
+            {
+                if(m_bc[bd] == boundary_condition_t::periodic ||
+                   m_bc[bd + dim] == boundary_condition_t::periodic)
+                {
+                    if(m_bc[bd + dim] != m_bc[bd])
+                        throw std::runtime_error(
+                            "Inconsistent boundary conditions for "
+                            "boundaries " +
+                            std::to_string(bd) + " and " +
+                            std::to_string(bd + dim) +
+                            ": periodic boundary conditions must be set "
+                            "for both boundaries in a dimension.");
+
+                    if(m_bdry_idxs[bd].size() != m_bdry_idxs[bd + dim].size())
+                        throw std::runtime_error(
+                            "Inconsistent equation rhs values for boundaries " +
+                            std::to_string(bd) + " and " +
+                            std::to_string(bd + dim) +
+                            ": boundaries have periodic boundary conditions "
+                            "but number of free solution values differs.");
                 }
             }
         }
@@ -133,10 +167,11 @@ namespace marlin
                                    << " target grid points." << '\n';)
         }
 
-        static inline scalar_t update_boundary(index_t index,
-                                               index_t boundary,
-                                               data_t const& soln,
-                                               grid_t const& grid) noexcept
+        static inline scalar_t update_boundary_extrapolate(
+            index_t index,
+            index_t boundary,
+            data_t const& soln,
+            grid_t const& grid) noexcept
         {
             assert(boundary < n_boundaries);
             assert(index < grid.npts());
@@ -155,7 +190,7 @@ namespace marlin
             return std::min(std::max(2 * outer - inner, inner), soln.at(index));
         }
 
-        scalar_t solver_t::boundary_sweep(index_t boundary) noexcept
+        scalar_t solver_t::boundary_sweep_extrapolate(index_t boundary) noexcept
         {
             assert(boundary < n_boundaries);
 
@@ -174,8 +209,10 @@ namespace marlin
                     index_t const index = bdry_idxs[i];
                     scalar_t const old = m_soln.at(index);
 
-                    scalar_t const new_val = m_soln.at(index) = std::min(
-                        update_boundary(index, boundary, m_soln, m_grid), old);
+                    scalar_t const new_val = m_soln.at(index) =
+                        std::min(update_boundary_extrapolate(
+                                     index, boundary, m_soln, m_grid),
+                                 old);
 
                     deltas[i] = old - new_val;
                 }
@@ -186,18 +223,6 @@ namespace marlin
             }
 
             return delta;
-        }
-
-        scalar_t solver_t::boundary() noexcept
-        {
-            scalar_t diff = 0;
-
-            for(index_t bdry = 0; bdry < n_boundaries; ++bdry)
-            {
-                diff = std::max(diff, boundary_sweep(bdry));
-            }
-
-            return diff;
         }
     }    // namespace solver
 }    // namespace marlin
