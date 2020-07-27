@@ -342,7 +342,7 @@ namespace marlin
 
             for(auto const& level : m_levels)
             {
-                size_t const size = level.size();
+                std::size_t const size = level.size();
                 std::vector<scalar_t> delta(size);
 
 #pragma omp parallel default(none) \
@@ -359,7 +359,7 @@ namespace marlin
                     }
 
 #pragma omp for schedule(static) reduction(max : diff) nowait
-                    for(size_t i = 0; i < size; ++i)
+                    for(std::size_t i = 0; i < size; ++i)
                         diff = std::max(delta[i], diff);
                 }
             }

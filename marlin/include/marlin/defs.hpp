@@ -26,7 +26,7 @@
 #pragma once
 
 #include <array>
-#include <functional>
+#include <cstddef>
 #include <type_traits>
 
 #ifndef MARLIN_N_DIMS
@@ -47,7 +47,7 @@ namespace marlin
     constexpr auto n_boundaries = 2 * dim;
 
     //! Type of the integer indices for indexing into the grid and arrays.
-    using index_t = size_t;
+    using index_t = std::size_t;
     //! Gridpoint representation as a list of indices.
     using point_t = std::array<index_t, dim>;
 

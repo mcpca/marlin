@@ -196,7 +196,7 @@ namespace marlin
 
             auto const& bdry_idxs = m_bdry_idxs[boundary];
 
-            size_t const npts = bdry_idxs.size();
+            std::size_t const npts = bdry_idxs.size();
             std::vector<scalar_t> deltas(npts);
             scalar_t delta = 0;
 
@@ -204,7 +204,7 @@ namespace marlin
     shared(boundary, npts, bdry_idxs, deltas, delta)
             {
 #pragma omp for schedule(static) nowait
-                for(size_t i = 0; i < npts; ++i)
+                for(std::size_t i = 0; i < npts; ++i)
                 {
                     index_t const index = bdry_idxs[i];
                     scalar_t const old = m_soln.at(index);
@@ -218,7 +218,7 @@ namespace marlin
                 }
 
 #pragma omp for schedule(static) reduction(max : delta) nowait
-                for(size_t i = 0; i < npts; ++i)
+                for(std::size_t i = 0; i < npts; ++i)
                     delta = std::max(delta, deltas[i]);
             }
 
